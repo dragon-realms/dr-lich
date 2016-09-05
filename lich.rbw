@@ -309,7 +309,7 @@ if (RUBY_PLATFORM =~ /mingw|win/i) and (RUBY_PLATFORM !~ /darwin/i)
 		end
 		def	Win32.RegCloseKey(args)
 			return Advapi32.RegCloseKey(args[:hKey])
-		end		
+		end
 
 		module Shell32
 			extend Fiddle::Importer
@@ -455,7 +455,7 @@ else
 				end
 			end
 			def Wine.registry_puts(key, value)
-				hkey, subkey, thingie = /(HKEY_LOCAL_MACHINE|HKEY_CURRENT_USER)\\(.+)\\([^\\]*)/.match(key).captures # fixme ]/ 
+				hkey, subkey, thingie = /(HKEY_LOCAL_MACHINE|HKEY_CURRENT_USER)\\(.+)\\([^\\]*)/.match(key).captures # fixme ]/
 				if File.exists?(PREFIX)
 					if thingie.nil? or thingie.empty?
 						thingie = '@'
@@ -1049,7 +1049,7 @@ module Lich
 		end
 	end
 	def Lich.restore_hosts
-		if Lich.hosts_file and File.exists?(Lich.hosts_file)		
+		if Lich.hosts_file and File.exists?(Lich.hosts_file)
 			begin
 				# fixme: use rename instead?  test rename on windows
 				if File.exists?("#{Lich.hosts_file}.bak")
@@ -1126,7 +1126,7 @@ module Lich
 		elsif (gamehost == 'gs4.simutronics.net') and (gameport.to_i == 10321)
 			game_host = 'storm.gs4.game.play.net'
 			game_port = 10324
-		elsif (gamehost == 'prime.dr.game.play.net') and (gameport.to_i == 4901)
+		elsif (gamehost == 'prime.dr.game.play.net') and (gameport.to_i == 4091)
 			gamehost = 'dr.simutronics.net'
 			gameport = 11024
 		end
@@ -1147,7 +1147,7 @@ module Lich
 			game_port = 10321
 		elsif (gamehost == 'dr.simutronics.net') and (gameport.to_i == 11024)
 			gamehost = 'prime.dr.game.play.net'
-			gameport = 4901
+			gameport = 4091
 		end
 		[ gamehost, gameport ]
 	end
@@ -3273,7 +3273,7 @@ class WizardScript<Script
 		if @vars.first =~ /^quiet$/i
 			@quiet = true
 			@vars.shift
-		else 
+		else
 			@quiet = false
 		end
 		@downstream_buffer = LimitedArray.new
@@ -4149,7 +4149,7 @@ class Map
 					visited[v] = true
 					@@list[v].wayto.keys.each { |adj_room|
 						adj_room_i = adj_room.to_i
-						unless visited[adj_room_i] 
+						unless visited[adj_room_i]
 							if @@list[v].timeto[adj_room].class == Proc
 								nd = @@list[v].timeto[adj_room].call
 							else
@@ -4173,7 +4173,7 @@ class Map
 					visited[v] = true
 					@@list[v].wayto.keys.each { |adj_room|
 						adj_room_i = adj_room.to_i
-						unless visited[adj_room_i] 
+						unless visited[adj_room_i]
 							if @@list[v].timeto[adj_room].class == Proc
 								nd = @@list[v].timeto[adj_room].call
 							else
@@ -4198,7 +4198,7 @@ class Map
 					visited[v] = true
 					@@list[v].wayto.keys.each { |adj_room|
 						adj_room_i = adj_room.to_i
-						unless visited[adj_room_i] 
+						unless visited[adj_room_i]
 							if @@list[v].timeto[adj_room].class == Proc
 								nd = @@list[v].timeto[adj_room].call
 							else
@@ -4345,7 +4345,7 @@ end
 
 def echo(*messages)
 	respond if messages.empty?
-	if script = Script.current 
+	if script = Script.current
 		unless script.no_echo
 			messages.each { |message| respond("[#{script.name}: #{message.to_s.chomp}]") }
 		end
@@ -4357,7 +4357,7 @@ end
 
 def _echo(*messages)
 	_respond if messages.empty?
-	if script = Script.current 
+	if script = Script.current
 		unless script.no_echo
 			messages.each { |message| _respond("[#{script.name}: #{message.to_s.chomp}]") }
 		end
@@ -4387,7 +4387,7 @@ end
 
 def unpause_script(*names)
 	names.flatten!
-	names.each { |scr| 
+	names.each { |scr|
 		fnd = Script.list.find { |nm| nm.name =~ /^#{scr}/i }
 		fnd.unpause if (fnd.paused and not fnd.nil?)
 	}
@@ -4566,7 +4566,7 @@ def selectput(string, success, failure, timeout = nil)
 	success = [ success ] if success.kind_of? String
 	failure = [ failure ] if failure.kind_of? String
 	if !string.kind_of?(String) or !success.kind_of?(Array) or !failure.kind_of?(Array) or timeout && !timeout.kind_of?(Numeric)
-		raise ArgumentError, "usage is: selectput(game_command,success_array,failure_array[,timeout_in_secs])" 
+		raise ArgumentError, "usage is: selectput(game_command,success_array,failure_array[,timeout_in_secs])"
 	end
 	success.flatten!
 	failure.flatten!
@@ -4854,7 +4854,7 @@ def move(dir='none', giveup_seconds=30, giveup_lines=30)
 			waitrt?
 			put_dir.call
 		elsif line == "You don't seem to be able to move to do that."
-			30.times { 
+			30.times {
 				break if clear.include?('You regain control of your senses!')
 				sleep 0.1
 			}
@@ -5033,7 +5033,7 @@ end
 def percentmind(num=nil)
 	if num.nil?
 		XMLData.mind_value
-	else 
+	else
 		XMLData.mind_value >= num.to_i
 	end
 end
@@ -5074,7 +5074,7 @@ def percentmana(num=nil)
 	end
 	if num.nil?
 		percent
-	else 
+	else
 		percent >= num.to_i
 	end
 end
@@ -5806,7 +5806,8 @@ def respond(first = "", *messages)
 		end
 		messages.flatten.each { |message| str += sprintf("%s\r\n", message.to_s.chomp) }
 		str.split(/\r?\n/).each { |line| Script.new_script_output(line); Buffer.update(line, Buffer::SCRIPT_OUTPUT) }
-		if $frontend == 'stormfront'
+		str.gsub!(/\r?\n/, "\r\n") if $frontend == 'genie'
+		if $frontend == 'stormfront' || $frontend == 'genie'
 			str = "<output class=\"mono\"/>\r\n#{str.gsub('&', '&amp;').gsub('<', '&lt;').gsub('>', '&gt;')}<output class=\"\"/>\r\n"
 		elsif $frontend == 'profanity'
 			str = str.gsub('&', '&amp;').gsub('<', '&lt;').gsub('>', '&gt;')
@@ -5830,6 +5831,7 @@ def _respond(first = "", *messages)
 		else
 			str += sprintf("%s\r\n", first.to_s.chomp)
 		end
+		str.gsub!(/\r?\n/, "\r\n") if $frontend == 'genie'
 		messages.flatten.each { |message| str += sprintf("%s\r\n", message.to_s.chomp) }
 		str.split(/\r?\n/).each { |line| Script.new_script_output(line); Buffer.update(line, Buffer::SCRIPT_OUTPUT) } # fixme: strip/separate script output?
 		wait_while { XMLData.in_stream }
@@ -8191,7 +8193,7 @@ module Games
 				release_options = options.dup
 				release_options[:multicast] = nil
 				if (self.mana_cost(options) > 0) and (  !checkmana(self.mana_cost(options)) or (Spell[515].active? and !checkmana(self.mana_cost(options) + [self.mana_cost(release_options)/4, 1].max))  )
-					false 
+					false
 				elsif (self.stamina_cost(options) > 0) and (Spell[9699].active? or not checkstamina(self.stamina_cost(options)))
 					false
 				elsif (self.spirit_cost(options) > 0) and not checkspirit(self.spirit_cost(options) + 1 + [ 9912, 9913, 9914, 9916, 9916, 9916 ].delete_if { |num| !Spell[num].active? }.length)
@@ -9534,7 +9536,7 @@ end
 
 def stop_script(*target_names)
 	numkilled = 0
-	target_names.each { |target_name| 
+	target_names.each { |target_name|
 		condemned = Script.list.find { |s_sock| s_sock.name =~ /^#{target_name}/i }
 		if condemned.nil?
 			respond("--- Lich: '#{Script.current}' tried to stop '#{target_name}', but it isn't running!")
@@ -9954,7 +9956,7 @@ early_gtk_error = nil
 
 unless File.exists?(DATA_DIR)
 	begin
-		Dir.mkdir(DATA_DIR)	
+		Dir.mkdir(DATA_DIR)
 	rescue
 		Lich.log "error: #{$!}\n\t#{$!.backtrace.join("\n\t")}"
 		Lich.msgbox(:message => "An error occured while attempting to create directory #{DATA_DIR}\n\n#{$!}", :icon => :error)
@@ -9963,7 +9965,7 @@ unless File.exists?(DATA_DIR)
 end
 unless File.exists?(SCRIPT_DIR)
 	begin
-		Dir.mkdir(SCRIPT_DIR)	
+		Dir.mkdir(SCRIPT_DIR)
 	rescue
 		Lich.log "error: #{$!}\n\t#{$!.backtrace.join("\n\t")}"
 		Lich.msgbox(:message => "An error occured while attempting to create directory #{SCRIPT_DIR}\n\n#{$!}", :icon => :error)
@@ -9972,7 +9974,7 @@ unless File.exists?(SCRIPT_DIR)
 end
 unless File.exists?(MAP_DIR)
 	begin
-		Dir.mkdir(MAP_DIR)	
+		Dir.mkdir(MAP_DIR)
 	rescue
 		Lich.log "error: #{$!}\n\t#{$!.backtrace.join("\n\t")}"
 		Lich.msgbox(:message => "An error occured while attempting to create directory #{MAP_DIR}\n\n#{$!}", :icon => :error)
@@ -9981,7 +9983,7 @@ unless File.exists?(MAP_DIR)
 end
 unless File.exists?(LOG_DIR)
 	begin
-		Dir.mkdir(LOG_DIR)	
+		Dir.mkdir(LOG_DIR)
 	rescue
 		Lich.log "error: #{$!}\n\t#{$!.backtrace.join("\n\t")}"
 		Lich.msgbox(:message => "An error occured while attempting to create directory #{LOG_DIR}\n\n#{$!}", :icon => :error)
@@ -9990,7 +9992,7 @@ unless File.exists?(LOG_DIR)
 end
 unless File.exists?(BACKUP_DIR)
 	begin
-		Dir.mkdir(BACKUP_DIR)	
+		Dir.mkdir(BACKUP_DIR)
 	rescue
 		Lich.log "error: #{$!}\n\t#{$!.backtrace.join("\n\t")}"
 		Lich.msgbox(:message => "An error occured while attempting to create directory #{BACKUP_DIR}\n\n#{$!}", :icon => :error)
@@ -10241,7 +10243,7 @@ if did_import.nil?
 				retry
 			end
 		end
-		favs = nil	
+		favs = nil
 
 		db = SQLite3::Database.new("#{DATA_DIR}/alias.db3")
 		begin
@@ -10434,9 +10436,13 @@ elsif ARGV.include?('--dragonrealms')
 			$stdout.puts "fixme"
 			Lich.log "fixme"
 			exit
+		elsif ARGV.grep(/--genie/).any?
+			game_host = 'dr.simutronics.net'
+			game_port = 11024
+			$frontend = 'genie'
 		else
 			game_host = 'dr.simutronics.net'
-			game_port = 4901
+			game_port = 11024
 			if ARGV.any? { |arg| arg == '--avalon' }
 				$frontend = 'avalon'
 			else
@@ -10457,7 +10463,7 @@ main_thread = Thread.new {
 	       test_mode = false
 	 $SEND_CHARACTER = '>'
 	     $cmd_prefix = '<c>'
-	$clean_lich_char = ';' # fixme
+	$clean_lich_char = $frontend == 'genie' ? ',' : ';'
 	$lich_char = Regexp.escape($clean_lich_char)
 
 	launch_data = nil
@@ -10505,7 +10511,7 @@ main_thread = Thread.new {
 					Lich.log(msg)
 				end
 			}
-	
+
 			login_server = nil
 			connect_thread = nil
 			timeout_thread = Thread.new {
@@ -10646,7 +10652,7 @@ main_thread = Thread.new {
                         last_user_id = login_info[:user_id].downcase
                         quick_box.pack_start(Gtk::Label.new("Account: " + last_user_id), false, false, 6)
                     end
-                    
+
 					label = Gtk::Label.new("#{login_info[:char_name]} (#{login_info[:game_name]}, #{login_info[:frontend]})")
 					play_button = Gtk::Button.new('Play')
 					remove_button = Gtk::Button.new('X')
@@ -10869,7 +10875,7 @@ main_thread = Thread.new {
 			custom_launch_dir.append_text("../wizard")
 			custom_launch_dir.append_text("../StormFront")
 
-			remember_use_simu_launcher_active = nil 
+			remember_use_simu_launcher_active = nil
 			revert_custom_launch_active = nil
 			frontend_option.signal_connect('changed') {
 				if ((frontend_option.active == 0) and not wizard_dir) or ((frontend_option.active == 1) and not stormfront_dir) or (frontend_option.active == 2) or (frontend_option.active == 3)
@@ -11402,7 +11408,7 @@ main_thread = Thread.new {
 			web_button_box = Gtk::HBox.new
 			web_button_box.pack_start(link_to_web_button, true, true, 5)
 			web_button_box.pack_start(unlink_from_web_button, true, true, 5)
-			
+
 			web_order_label = Gtk::Label.new
 			web_order_label.text = "Unknown"
 
@@ -11418,7 +11424,7 @@ main_thread = Thread.new {
 			sge_button_box = Gtk::HBox.new
 			sge_button_box.pack_start(link_to_sge_button, true, true, 5)
 			sge_button_box.pack_start(unlink_from_sge_button, true, true, 5)
-			
+
 			sge_order_label = Gtk::Label.new
 			sge_order_label.text = "Unknown"
 
@@ -11891,7 +11897,7 @@ main_thread = Thread.new {
 					if Lich.win32_launch_method and Lich.win32_launch_method =~ /^(\d+):(.+)$/
 						method_num = $1.to_i
 						if $2 == 'fail'
-							method_num = (method_num + 1) % 6 
+							method_num = (method_num + 1) % 6
 						end
 					else
 						method_num = 5
@@ -11911,7 +11917,7 @@ main_thread = Thread.new {
 						end
 						unless associated
 							Lich.log "warning: skipping launch method #{method_num + 1} because .sal files are not associated with the Simutronics Launcher"
-							method_num = (method_num + 1) % 6 
+							method_num = (method_num + 1) % 6
 						end
 					end
 					Lich.win32_launch_method = "#{method_num}:fail"
@@ -12266,6 +12272,7 @@ main_thread = Thread.new {
 			begin
 				while client_string = $_CLIENT_.gets
 					client_string = "#{$cmd_prefix}#{client_string}" if $frontend =~ /^(?:wizard|avalon)$/
+					Lich.log(client_string)
 					begin
 						$_IDLETIMESTAMP_ = Time.now
 						do_client(client_string)
@@ -12356,7 +12363,7 @@ main_thread = Thread.new {
 						Lich.log "error: client_thread: #{$!}\n\t#{$!.backtrace.join("\n\t")}"
 						$_DETACHABLE_CLIENT_.close rescue nil
 						$_DETACHABLE_CLIENT_ = nil
-					ensure 
+					ensure
 						$_DETACHABLE_CLIENT_.close rescue nil
 						$_DETACHABLE_CLIENT_ = nil
 					end
