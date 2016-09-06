@@ -4837,6 +4837,9 @@ def move(dir='none', giveup_seconds=30, giveup_lines=30)
 			fput 'stand'
 			waitrt?
 			put_dir.call
+		elsif line == "You're still recovering from your recent cast."
+			sleep 2
+			put_dir.call
 		elsif line =~ /^Sorry, you may only type ahead/
 			sleep 1
 			put_dir.call
