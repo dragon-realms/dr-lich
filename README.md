@@ -2,7 +2,7 @@
 
 basic steps are as follows, you need a working lich install https://lichproject.org/download.html#win_storm_wiz_lich 
 
-Set up dependency  https://github.com/rpherbig/dr-scripts/wiki/First-Time-Setup steps 1-3
+Set up dependency in SF https://github.com/rpherbig/dr-scripts/wiki/First-Time-Setup steps 1-3
 
 While connected through SF, run ;e toggle_lich_fork
 
@@ -10,7 +10,7 @@ that should take 5-10 seconds to swap the version of Lich you're on. Run that co
 
 Get your genie client open
 
-Oopen up an administrator command prompt (win+x then A in windows 8+)
+Open up an administrator command prompt (win+x then A in windows 8+)
 navigate to your lich directory and in the command prompt run 
 
   ruby lich.rbw --dragonrealms --genie
