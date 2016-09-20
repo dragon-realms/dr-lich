@@ -36,7 +36,7 @@
 # Lich is maintained by Matt Lowe (tillmen@lichproject.org)
 #
 
-LICH_VERSION = '4.7.00f'
+LICH_VERSION = '4.7.01f'
 TESTING = false
 
 if RUBY_VERSION !~ /^2/
@@ -4845,6 +4845,10 @@ def move(dir='none', giveup_seconds=30, giveup_lines=30)
 		elsif line == "You're still recovering from your recent cast."
 			sleep 2
 			put_dir.call
+		elsif line == "The ground approaches you at an alarming rate"
+			sleep
+			fput 'stand' unless standing?
+			put_dir.call
 		elsif line =~ /^Sorry, you may only type ahead/
 			sleep 1
 			put_dir.call
@@ -6630,13 +6634,9 @@ def do_client(client_string)
 					Script.new_downstream(msg)
 				end
 			end
-		elsif cmd =~ /^(?:exec|e)(q)? (.+)$/
-			cmd_data = $2
-			if $1.nil?
-				ExecScript.start(cmd_data, flags={ :quiet => false, :trusted => true })
-			else
-				ExecScript.start(cmd_data, flags={ :quiet => true, :trusted => true })
-			end
+		elsif cmd =~ /^(?:exec|e)(q)?(n)? (.+)$/
+			cmd_data = $3
+			ExecScript.start(cmd_data, flags={ :quiet => $1, :trusted => $2.nil? })
 		elsif cmd =~ /^trust\s+(.*)/i
 			script_name = $1
 			if File.exists?("#{SCRIPT_DIR}/#{script_name}.lic")
