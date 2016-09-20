@@ -1384,7 +1384,6 @@ class XMLParser
 
 	def parse(line)
 		@buffer.concat(line)
-		
 		loop {
 			if str = @buffer.slice!(/^[^<]+/)
 				text(str.gsub(/&(lt|gt|quot|apos|amp)/) { @unescape[$1] })
