@@ -1,4 +1,4 @@
-# Instructions for combining Lich+Geni
+# Instructions for combining Lich with Genie & Frostbite FE
 
 ## General Instructions
 basic steps are as follows, you need a working lich install https://lichproject.org/download.html#win_storm_wiz_lich 
@@ -15,7 +15,7 @@ Get your genie client open
 Open up an administrator command prompt (win+x then A in windows 8+)
 navigate to your lich directory and in the command prompt run 
 
-  ruby lich.rbw --dragonrealms --genie
+ - 'ruby lich.rbw --dragonrealms --genie'
   
 Then connect to a character via genie like normally.
 
@@ -31,7 +31,7 @@ Download Frostbite from: http://matoom.github.io/frostbite/installation.html
 Open up an administrator command prompt (win+x then A in windows 8+)
 navigate to your lich directory and in the command prompt run 
 
-  ruby lich.rbw --dragonrealms --genie
+  - 'ruby lich.rbw --dragonrealms --frostbite'
   
 Then connect to a character via genie like normally.
 
@@ -39,10 +39,10 @@ Then connect to a character via genie like normally.
 
 Open up command prompt
 Navigate to your lich directory:
- - ex. cd ~/Downloads/lich 
+ - ex. 'cd ~/Downloads/lich'
 
 Run Lich.rbw with the following options
 
-  - sudo ./lich.rbw --dragonrealms --frostbite
+  - 'sudo ./lich.rbw --dragonrealms --frostbite'
   
 Then connect to a character via Frostbite like normally.
