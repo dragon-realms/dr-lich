@@ -36,7 +36,7 @@
 # Lich is maintained by Matt Lowe (tillmen@lichproject.org)
 #
 
-LICH_VERSION = '4.7.01f'
+LICH_VERSION = '4.7.10f'
 TESTING = false
 
 if RUBY_VERSION !~ /^2/
@@ -6403,6 +6403,19 @@ $link_highlight_end = ''
 $speech_highlight_start = ''
 $speech_highlight_end = ''
 
+def fb_to_sf(line)
+	begin
+		return line if line == "\r\n"
+
+		line = line.gsub(/<c>/, "")
+		return nil if line.gsub("\r\n", '').length < 1
+		return line
+	rescue
+		$_CLIENT_.puts "--- Error: fb_to_sf: #{$!}"
+		$_CLIENT_.puts '$_SERVERSTRING_: ' + $_SERVERSTRING_.to_s
+	end
+end
+
 def sf_to_wiz(line)
 	begin
 		return line if line == "\r\n"
@@ -6499,7 +6512,7 @@ end
 def monsterbold_start
 	if $frontend =~ /^(?:wizard|avalon)$/
 		"\034GSL\r\n"
-	elsif $frontend == 'stormfront'
+	elsif $frontend =~ /^(?:stormfront|frostbite)$/
 		'<pushBold/>'
 	elsif $frontend == 'profanity'
 		'<b>'
@@ -6511,7 +6524,7 @@ end
 def monsterbold_end
 	if $frontend =~ /^(?:wizard|avalon)$/
 		"\034GSM\r\n"
-	elsif $frontend == 'stormfront'
+	elsif $frontend =~ /^(?:stormfront|frostbite)$/
 		'<popBold/>'
 	elsif $frontend == 'profanity'
 		'</b>'
@@ -10068,6 +10081,7 @@ if ARGV.any? { |arg| (arg == '-h') or (arg == '--help') }
 	puts '  -w, --wizard        Run in Wizard mode (default)'
 	puts '  -s, --stormfront    Run in StormFront mode.'
 	puts '      --avalon        Run in Avalon mode.'
+	puts '      --frostbite     Run in Frosbite mode.'
 	puts ''
 	puts '      --gemstone      Connect to the Gemstone IV Prime server (default).'
 	puts '      --dragonrealms  Connect to the DragonRealms server.'
@@ -10374,6 +10388,8 @@ if arg = ARGV.find { |a| (a == '-g') or (a == '--game') }
 		$frontend = 'wizard'
 	elsif ARGV.any? { |arg| arg == '--avalon' }
 		$frontend = 'avalon'
+	elsif ARGV.any? { |arg| arg == '--frostbite' }
+		$frontend = 'frostbite'
 	else
 		$frontend = 'unknown'
 	end
@@ -10454,6 +10470,8 @@ elsif ARGV.include?('--dragonrealms')
 			game_port = 11024
 			if ARGV.any? { |arg| arg == '--avalon' }
 				$frontend = 'avalon'
+			elsif ARGV.any? { |arg| arg == '--frostbite' }
+				$frontend = 'frostbite'
 			else
 				$frontend = 'wizard'
 			end
@@ -12224,6 +12242,35 @@ main_thread = Thread.new {
 				# client wants to send "GOOD", xml server won't recognize it
 				#
 				$_CLIENT_.gets
+			elsif $frontend =~ /^(?:frostbite)$/
+				#
+				# send the login key
+				#
+				client_string = $_CLIENT_.gets
+				client_string = fb_to_sf(client_string)
+				Game._puts(client_string)
+				#
+				# take the version string from the client, ignore it, and ask the server for xml
+				#
+				$_CLIENT_.gets
+				client_string = "/FE:STORMFRONT /VERSION:1.0.1.26 /P:#{RUBY_PLATFORM} /XML"
+				$_CLIENTBUFFER_.push(client_string.dup)
+				Game._puts(client_string)
+				#
+				# tell the server we're ready
+				#
+				2.times {
+					sleep 0.3
+					$_CLIENTBUFFER_.push("#{$cmd_prefix}\r\n")
+					Game._puts($cmd_prefix)
+				}
+				#
+				# set up some stuff
+				#
+				for client_string in [ "#{$cmd_prefix}_injury 2", "#{$cmd_prefix}_flag Display Inventory Boxes 1", "#{$cmd_prefix}_flag Display Dialog Boxes 0" ]
+					$_CLIENTBUFFER_.push(client_string)
+					Game._puts(client_string)
+				end
 			else
 				inv_off_proc = proc { |server_string|
 					if server_string =~ /^<(?:container|clearContainer|exposeContainer)/
@@ -12280,7 +12327,11 @@ main_thread = Thread.new {
 
 			begin
 				while client_string = $_CLIENT_.gets
-					client_string = "#{$cmd_prefix}#{client_string}" if $frontend =~ /^(?:wizard|avalon)$/
+					if $frontend =~ /^(?:wizard|avalon)$/
+						client_string = "#{$cmd_prefix}#{client_string}"
+					elsif $frontend =~ /^(?:frostbite)$/
+						client_string = fb_to_sf(client_string)
+					end
 					Lich.log(client_string)
 					begin
 						$_IDLETIMESTAMP_ = Time.now
