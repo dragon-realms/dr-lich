@@ -1384,8 +1384,6 @@ class XMLParser
 
 	def parse(line)
 		@buffer.concat(line)
-
-		$stdout.puts "Inside parse and getting line: #{line}"
 		
 		loop {
 			if str = @buffer.slice!(/^[^<]+/)
@@ -1406,8 +1404,6 @@ class XMLParser
 	end
 
 	def tag_start(name, attributes)
-		$stdout.puts "Inside tag start with name: #{name} and attribute: #{attributes}"
-
 		begin
 			@active_tags.push(name)
 			@active_ids.push(attributes['id'].to_s)
