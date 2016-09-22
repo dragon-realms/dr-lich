@@ -46,3 +46,12 @@ Run Lich.rbw with the following options
   - 'sudo ./lich.rbw --dragonrealms --frostbite'
   
 Then connect to a character via Frostbite like normally.
+
+####Note for RVM users
+If you are using rvm, you will want to use rvmsudo to do the sudo call (else you will use whatever ruby version sudo defaults to which will lead to Problems). Setting up rvmsudo is detailed here: https://rvm.io/integration/sudo
+ The steps are as follows:
+ 1. Add `export rvmsudo_secure_path=0` to ~/.bashrc
+ 2. Add `Defaults env_keep +="rvm_bin_path GEM_HOME IRBRC MY_RUBY_HOME rvm_path rvm_prefix rvm_version GEM_PATH rvmsudo_secure_path RUBY_VERSION rvm_ruby_string rvm_delete_flag"` to /etc/sudoers (careful...)
+ 3. Comment out `Defaults secure_path=...` in /etc/sudoers
+ 
+Now run `rvmsudo ./lich.rbw --dragonrealms --frostbite`
