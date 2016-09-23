@@ -4840,8 +4840,8 @@ def move(dir='none', giveup_seconds=30, giveup_lines=30)
 		elsif line == "You're still recovering from your recent cast."
 			sleep 2
 			put_dir.call
-		elsif line == "The ground approaches you at an alarming rate"
-			sleep
+		elsif line =~ /^The ground approaches you at an alarming rate/
+			sleep 1
 			fput 'stand' unless standing?
 			put_dir.call
 		elsif line =~ /^Sorry, you may only type ahead/
