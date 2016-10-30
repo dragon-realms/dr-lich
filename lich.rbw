@@ -36,7 +36,7 @@
 # Lich is maintained by Matt Lowe (tillmen@lichproject.org)
 #
 
-LICH_VERSION = '4.7.13f'
+LICH_VERSION = '4.7.14f'
 TESTING = false
 
 if RUBY_VERSION !~ /^2/
