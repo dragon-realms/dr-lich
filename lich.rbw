@@ -1423,8 +1423,11 @@ class XMLParser
 				@obj_after_name = nil
 			elsif name == 'dialogData' and attributes['id'] == 'ActiveSpells' and attributes['clear'] == 't'
 				@active_spells.clear
-			elsif name == 'resource' or name == 'nav'
+			elsif name == 'resource'
 				nil
+      elsif name == 'nav'
+        $nav_seen = true
+        Map.last_seen_objects = nil
 			elsif name == 'pushStream'
 				@in_stream = true
 				@current_stream = attributes['id'].to_s
@@ -1459,7 +1462,6 @@ class XMLParser
 				if attributes['id'] == 'room objs'
 					GameObj.clear_loot
 					GameObj.clear_npcs
-					@room_objects = String.new
 				elsif attributes['id'] == 'room players'
 					GameObj.clear_pcs
 				elsif attributes['id'] == 'room exits'
@@ -1469,8 +1471,8 @@ class XMLParser
 					@room_description = String.new
 					GameObj.clear_room_desc
 				elsif attributes['id'] == 'room extra' # DragonRealms
-					@room_count += 1
-					$room_count += 1
+					#@room_count += 1
+					#$room_count += 1
 				# elsif attributes['id'] == 'sprite'
 				end
 			elsif name == 'clearContainer'
@@ -1753,8 +1755,6 @@ class XMLParser
 						end
 					elsif (text_string =~ /that (?:is|appears) ([\w\s]+)(?:,| and|\.)/) or (text_string =~ / \(([^\(]+)\)/)
 						GameObj.npcs[-1].status = $1
-					elsif !@bold
-						@room_objects += text_string
 					end
 				elsif @active_ids.include?('room players')
 					if @active_tags.include?('a')
@@ -1905,6 +1905,13 @@ class XMLParser
 				$_CLIENT_.puts "\034GSj#{sprintf('%-20s', gsl_exits)}\r\n"
 				gsl_exits = nil
 				@room_count += 1
+				$room_count += 1
+      elsif name == 'compass' and $nav_seen
+        $nav_seen = false
+        @second_compass = true
+      elsif name == 'compass' and @second_compass
+        @second_compass = false
+        @room_count += 1
 				$room_count += 1
 			end
 			@last_tag = @active_tags.pop
@@ -3509,6 +3516,7 @@ class Map
 	@@elevated_load_xml        = proc { Map.load_xml }
 	@@elevated_save            = proc { Map.save }
 	@@elevated_save_xml        = proc { Map.save_xml }
+  @@last_seen_objects = nil
 	attr_reader :id
 	attr_accessor :title, :description, :paths, :location, :climate, :terrain, :wayto, :timeto, :image, :image_coords, :tags, :check_location, :unique_loot, :room_objects
 	def initialize(id, title, description, paths, location=nil, climate=nil, terrain=nil, wayto={}, timeto={}, image=nil, image_coords=nil, tags=[], check_location=nil, unique_loot=nil, room_objects=nil)
@@ -3518,6 +3526,12 @@ class Map
 	def outside?
 		@paths.first =~ /Obvious paths:/
 	end
+  def Map.last_seen_objects=(val)
+    @@last_seen_objects = val
+  end
+  def Map.last_seen_objects
+    @@last_seen_objects
+  end
 	def to_i
 		@id
 	end
@@ -3653,14 +3667,14 @@ class Map
 						1.times {
 							@@current_room_count = XMLData.room_count
 							foggy_exits = (XMLData.room_exits_string =~ /^Obvious (?:exits|paths): obscured by a thick fog$/)
-							if room = @@list.find { |r| r.title.include?(XMLData.room_title) and r.description.include?(XMLData.room_description.strip) and (r.room_objects.nil? || r.room_objects.all?{|obj| /\b#{obj}\b/ =~ XMLData.room_objects } ) and (r.unique_loot.nil? or (r.unique_loot.to_a - GameObj.loot.to_a.collect { |obj| obj.name }).empty?) and (foggy_exits or r.paths.include?(XMLData.room_exits_string.strip) or r.tags.include?('random-paths')) and (not r.check_location or r.location == Map.get_location) and check_peer_tag.call(r) }
+							if room = @@list.find { |r| r.title.include?(XMLData.room_title) and r.description.include?(XMLData.room_description.strip) and (r.room_objects.nil? || r.room_objects.all?{|obj| /\b#{obj}\b/ =~ Map.last_seen_objects } ) and (r.unique_loot.nil? or (r.unique_loot.to_a - GameObj.loot.to_a.collect { |obj| obj.name }).empty?) and (foggy_exits or r.paths.include?(XMLData.room_exits_string.strip) or r.tags.include?('random-paths')) and (not r.check_location or r.location == Map.get_location) and check_peer_tag.call(r) }
 								redo unless @@current_room_count == XMLData.room_count
 								@@current_room_id = room.id
 								return room
 							else
 								redo unless @@current_room_count == XMLData.room_count
 								desc_regex = /#{Regexp.escape(XMLData.room_description.strip.sub(/\.+$/, '')).gsub(/\\\.(?:\\\.\\\.)?/, '|')}/
-								if room = @@list.find { |r| r.title.include?(XMLData.room_title) and (foggy_exits or r.paths.include?(XMLData.room_exits_string.strip) or r.tags.include?('random-paths')) and (r.room_objects.nil? || r.room_objects.all?{|obj| /\b#{obj}\b/ =~ XMLData.room_objects } ) and (XMLData.room_window_disabled or r.description.any? { |desc| desc =~ desc_regex }) and (r.unique_loot.nil? or (r.unique_loot.to_a - GameObj.loot.to_a.collect { |obj| obj.name }).empty?) and (not r.check_location or r.location == Map.get_location) and check_peer_tag.call(r) }
+								if room = @@list.find { |r| r.title.include?(XMLData.room_title) and (foggy_exits or r.paths.include?(XMLData.room_exits_string.strip) or r.tags.include?('random-paths')) and (r.room_objects.nil? || r.room_objects.all?{|obj| /\b#{obj}\b/ =~ Map.last_seen_objects } ) and (XMLData.room_window_disabled or r.description.any? { |desc| desc =~ desc_regex }) and (r.unique_loot.nil? or (r.unique_loot.to_a - GameObj.loot.to_a.collect { |obj| obj.name }).empty?) and (not r.check_location or r.location == Map.get_location) and check_peer_tag.call(r) }
 									redo unless @@current_room_count == XMLData.room_count
 									@@current_room_id = room.id
 									return room
@@ -3694,7 +3708,7 @@ class Map
 					1.times {
 						@@fuzzy_room_count = XMLData.room_count
 						foggy_exits = (XMLData.room_exits_string =~ /^Obvious (?:exits|paths): obscured by a thick fog$/)
-						if (room = @@list.find { |r| r.title.include?(XMLData.room_title) and r.description.include?(XMLData.room_description.strip) and (r.room_objects.nil? || r.room_objects.all?{|obj| /\b#{obj}\b/ =~ XMLData.room_objects } ) and (r.unique_loot.nil? or (r.unique_loot.to_a - GameObj.loot.to_a.collect { |obj| obj.name }).empty?) and (foggy_exits or r.paths.include?(XMLData.room_exits_string.strip) or r.tags.include?('random-paths')) and (not r.check_location or r.location == Map.get_location) })
+						if (room = @@list.find { |r| r.title.include?(XMLData.room_title) and r.description.include?(XMLData.room_description.strip) and (r.room_objects.nil? || r.room_objects.all?{|obj| /\b#{obj}\b/ =~ Map.last_seen_objects } ) and (r.unique_loot.nil? or (r.unique_loot.to_a - GameObj.loot.to_a.collect { |obj| obj.name }).empty?) and (foggy_exits or r.paths.include?(XMLData.room_exits_string.strip) or r.tags.include?('random-paths')) and (not r.check_location or r.location == Map.get_location) })
 							redo unless @@fuzzy_room_count == XMLData.room_count
 							if room.tags.any? { |tag| tag =~ /^(set desc on; )?peer [a-z]+ =~ \/.+\/$/ }
 								@@fuzzy_room_id = nil
@@ -3706,7 +3720,7 @@ class Map
 						else
 							redo unless @@fuzzy_room_count == XMLData.room_count
 							desc_regex = /#{Regexp.escape(XMLData.room_description.strip.sub(/\.+$/, '')).gsub(/\\\.(?:\\\.\\\.)?/, '|')}/
-							if room = @@list.find { |r| r.title.include?(XMLData.room_title) and (foggy_exits or r.paths.include?(XMLData.room_exits_string.strip) or r.tags.include?('random-paths')) and (r.room_objects.nil? || r.room_objects.all?{|obj| /\b#{obj}\b/ =~ XMLData.room_objects } ) and (XMLData.room_window_disabled or r.description.any? { |desc| desc =~ desc_regex }) and (r.unique_loot.nil? or (r.unique_loot.to_a - GameObj.loot.to_a.collect { |obj| obj.name }).empty?) and (not r.check_location or r.location == Map.get_location) }
+							if room = @@list.find { |r| r.title.include?(XMLData.room_title) and (foggy_exits or r.paths.include?(XMLData.room_exits_string.strip) or r.tags.include?('random-paths')) and (r.room_objects.nil? || r.room_objects.all?{|obj| /\b#{obj}\b/ =~ Map.last_seen_objects } ) and (XMLData.room_window_disabled or r.description.any? { |desc| desc =~ desc_regex }) and (r.unique_loot.nil? or (r.unique_loot.to_a - GameObj.loot.to_a.collect { |obj| obj.name }).empty?) and (not r.check_location or r.location == Map.get_location) }
 								redo unless @@fuzzy_room_count == XMLData.room_count
 								if room.tags.any? { |tag| tag =~ /^(set desc on; )?peer [a-z]+ =~ \/.+\/$/ }
 									@@fuzzy_room_id = nil
@@ -7164,6 +7178,9 @@ module Games
 									stripped_server = strip_xml($_SERVERSTRING_)
 									stripped_server.split("\r\n").each { |line|
 										@@buffer.update(line) if TESTING
+                    if !Map.last_seen_objects && line =~ /(You also see .*)$/
+                      Map.last_seen_objects = $1
+                    end
 										unless line =~ /^\s\*\s[A-Z][a-z]+ (?:returns home from a hard day of adventuring\.|joins the adventure\.|(?:is off to a rough start!  (?:H|She) )?just bit the dust!|was just incinerated!|was just vaporized!|has been vaporized!|has disconnected\.)$|^ \* The death cry of [A-Z][a-z]+ echoes in your mind!$|^\r*\n*$/
 											Script.new_downstream(line) unless line.empty?
 										end
