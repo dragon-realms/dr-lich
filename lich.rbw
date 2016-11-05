@@ -36,7 +36,7 @@
 # Lich is maintained by Matt Lowe (tillmen@lichproject.org)
 #
 
-LICH_VERSION = '4.7.14f'
+LICH_VERSION = '4.7.15f'
 TESTING = false
 
 if RUBY_VERSION !~ /^2/
@@ -4862,7 +4862,7 @@ def move(dir='none', giveup_seconds=30, giveup_lines=30)
 			sleep 1
 			fput 'stand' unless standing?
 			put_dir.call
-		elsif line =~ /^You go flying down several feet/
+		elsif line =~ /You go flying down several feet, landing with a/
 			sleep 1
 			fput 'stand' unless standing?
 			put_dir.call
