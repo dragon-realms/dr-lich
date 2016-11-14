@@ -36,7 +36,7 @@
 # Lich is maintained by Matt Lowe (tillmen@lichproject.org)
 #
 
-LICH_VERSION = '4.7.15f'
+LICH_VERSION = '4.7.16f'
 TESTING = false
 
 if RUBY_VERSION !~ /^2/
@@ -4851,7 +4851,7 @@ def move(dir='none', giveup_seconds=30, giveup_lines=30)
 				sleep 0.3
 			end
 			put_dir.call
-		elsif line =~ /will have to stand up first|must be standing first|^You'll have to get up first|^But you're already sitting!|^Shouldn't you be standing first|^Try standing up|^Perhaps you should stand up|^Standing up might help|^You should really stand up first|You can't do that while sitting|You must be standing to do that/
+		elsif line =~ /will have to stand up first|must be standing first|^You'll have to get up first|^But you're already sitting!|^Shouldn't you be standing first|^Try standing up|^Perhaps you should stand up|^Standing up might help|^You should really stand up first|You can't do that while sitting|You must be standing to do that|You can't do that while lying down/
 			fput 'stand'
 			waitrt?
 			put_dir.call
