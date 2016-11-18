@@ -5,9 +5,9 @@ basic steps are as follows, you need a working lich install https://lichproject.
 
 Set up dependency in SF https://github.com/rpherbig/dr-scripts/wiki/First-Time-Setup steps 1-3
 
-While connected through SF, run ;e toggle_lich_fork
+While connected through SF, run ;e use_lich_fork
 
-that should take 5-10 seconds to swap the version of Lich you're on. Run that command again at any time to toggle back. Then you're basically done with SF. close out if it.
+that should take 5-10 seconds to swap the version of Lich you're on. Run ;e use_lich_main at any time to toggle back. Then you're basically done with SF. close out if it.
 
 ## Genie-specific instructions
 Get your genie client open
