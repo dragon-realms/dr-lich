@@ -37,7 +37,7 @@
 #
 
 # Based on Lich 4.6.37
-LICH_VERSION = '4.7.18f'
+LICH_VERSION = '4.7.19f'
 TESTING = false
 
 if RUBY_VERSION !~ /^2/
@@ -4782,7 +4782,7 @@ def move(dir='none', giveup_seconds=30, giveup_lines=30)
 			sleep 1
 			waitrt?
 			put_dir.call
-		elsif line =~ /^Climbing.*(?:plunge|fall)|^Tentatively, you attempt to climb.*(?:fall|slip)|^You start.*but quickly realize|^You.*drop back to the ground|^You leap .* fall unceremoniously to the ground in a heap\.$|^You search for a way to make the climb .*? but without success\.$|^You start to climb .* you fall to the ground|^You attempt to climb .* wrong approach|^You run towards .*? slowly retreat back, reassessing the situation\./
+		elsif line =~ /^Climbing.*(?:plunge|fall)|^Tentatively, you attempt to climb.*(?:fall|slip)|^You start up the .* but slip after a few feet and fall to the ground|^You start.*but quickly realize|^You.*drop back to the ground|^You leap .* fall unceremoniously to the ground in a heap\.$|^You search for a way to make the climb .*? but without success\.$|^You start to climb .* you fall to the ground|^You attempt to climb .* wrong approach|^You run towards .*? slowly retreat back, reassessing the situation\./
 			sleep 1
 			waitrt?
 			fput 'stand' unless standing?
