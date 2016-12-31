@@ -37,7 +37,7 @@
 #
 
 # Based on Lich 4.6.37
-LICH_VERSION = '4.7.21f'
+LICH_VERSION = '4.7.22f'
 TESTING = false
 
 if RUBY_VERSION !~ /^2/
@@ -4778,7 +4778,7 @@ def move(dir='none', giveup_seconds=30, giveup_lines=30)
 			Script.current.downstream_buffer.flatten!
 			# return nil instead of false to show the direction shouldn't be removed from the map database
 			return nil
-		elsif line =~ /^You grab [A-Z][a-z]+ and try to drag h(?:im|er), but s?he (?:is too heavy|doesn't budge)\.$|^Tentatively, you attempt to swim through the nook\.  After only a few feet, you begin to sink!  Your lungs burn from lack of air, and you begin to panic!  You frantically paddle back to safety!$|^Guards(?:wo)?man [A-Z][a-z]+ stops you and says, "(?:Stop\.|Halt!)  You need to make sure you check in|^You step into the root, but can see no way to climb the slippery tendrils inside\.  After a moment, you step back out\.$|^As you start .*? back to safe ground\.$|^You stumble a bit as you try to enter the pool but feel that your persistence will pay off\.$|^A shimmering field of magical crimson and gold energy flows through the area\.$|^Trying to judge the climb, you peer over the edge\.  A wave of dizziness hits you, and you back away from the rope\.$/
+		elsif line =~ /^You grab [A-Z][a-z]+ and try to drag h(?:im|er), but s?he (?:is too heavy|doesn't budge)\.$|^Tentatively, you attempt to swim through the nook\.  After only a few feet, you begin to sink!  Your lungs burn from lack of air, and you begin to panic!  You frantically paddle back to safety!$|^Guards(?:wo)?man [A-Z][a-z]+ stops you and says, "(?:Stop\.|Halt!)  You need to make sure you check in|^You step into the root, but can see no way to climb the slippery tendrils inside\.  After a moment, you step back out\.$|^As you start .*? back to safe ground\.$|^You stumble a bit as you try to enter the pool but feel that your persistence will pay off\.$|^A shimmering field of magical crimson and gold energy flows through the area\.$|^Trying to judge the climb, you peer over the edge\.  A wave of dizziness hits you, and you back away from the rope\.$|^You approach the .*, but the steepness is intimidating\.$|^You make your way up the ledge\. Partway up, you make the mistake of looking down\. Struck by vertigo, you cling to the ledge for a few moments, then slowly climb back down\.$/
 			sleep 1
 			waitrt?
 			put_dir.call
