@@ -33,7 +33,7 @@ navigate to your lich directory and in the command prompt run
 
   - 'ruby lich.rbw --dragonrealms --frostbite'
   
-Then connect to a character via genie like normally.
+Then connect to a character via Frostbite like normally.
 
 ### Mac OS X / *nix
 
