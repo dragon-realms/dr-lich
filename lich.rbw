@@ -10466,6 +10466,23 @@ elsif ARGV.include?('--shattered')
 			$frontend = 'wizard'
 		end
 	end
+elsif ARGV.include?('--fallen')
+   $platinum = false
+   # Not sure what the port info is for anything else but Genie :(
+   if ARGV.any? { |arg| (arg == '-s') or (arg == '--stormfront') }
+      $frontend = 'stormfront'
+      $stdout.puts "fixme"
+      Lich.log "fixme"
+      exit
+   elsif ARGV.grep(/--genie/).any?
+      game_host = 'dr.simutronics.net'
+      game_port = 11324
+      $frontend = 'genie'
+   else
+      $stdout.puts "fixme"
+      Lich.log "fixme"
+      exit
+   end
 elsif ARGV.include?('--dragonrealms')
 	if ARGV.include?('--platinum')
 		$platinum = true
