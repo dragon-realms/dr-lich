@@ -10564,6 +10564,16 @@ main_thread = Thread.new {
 		else
 			data = entry_data.find { |d| (d[:char_name] == char_name) }
 		end
+
+    unless data
+      data = { char_name: char_name }
+      data[:game_code] = "DR"
+      user_id = ARGV[ARGV.index('--user_id')+1]
+      data[:user_id] = user_id
+      password = ARGV[ARGV.index('--password')+1]
+      data[:password] = password
+    end
+
 		if data
 			Lich.log "info: using quick game entry settings for #{char_name}"
 			msgbox = proc { |msg|
