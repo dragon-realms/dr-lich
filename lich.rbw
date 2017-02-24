@@ -12385,7 +12385,7 @@ main_thread = Thread.new {
 					elsif $frontend =~ /^(?:frostbite)$/
 						client_string = fb_to_sf(client_string)
 					end
-					Lich.log(client_string)
+					#Lich.log(client_string)
 					begin
 						$_IDLETIMESTAMP_ = Time.now
 						do_client(client_string)
