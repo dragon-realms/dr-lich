@@ -10491,6 +10491,10 @@ elsif ARGV.include?('--dragonrealms')
 			Lich.log "fixme"
 			exit
 			$frontend = 'stormfront'
+		elsif ARGV.grep(/--genie/).any?
+			game_host = 'dr.simutronics.net'
+			game_port = 11124
+			$frontend = 'genie'
 		else
 			$stdout.puts "fixme"
 			Lich.log "fixme"
