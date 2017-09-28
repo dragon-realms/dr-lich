@@ -47,7 +47,7 @@ Run Lich.rbw with the following options
   
 Then connect to a character via Frostbite like normally.
 
-####Note for RVM users
+#### Note for RVM users
 If you are using rvm, you will want to use rvmsudo to do the sudo call (else you will use whatever ruby version sudo defaults to which will lead to Problems). Setting up rvmsudo is detailed here: https://rvm.io/integration/sudo
  The steps are as follows:
  1. Add `export rvmsudo_secure_path=0` to ~/.bashrc
