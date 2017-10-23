@@ -1229,7 +1229,7 @@ class StringProc
 	end
 	def call(*a)
 		if $SAFE < 3
-			proc { $SAFE = 3; eval(@string) }.call
+			proc { $SAFE = 1; eval(@string) }.call
 		else
 			eval(@string)
 		end
@@ -2542,7 +2542,7 @@ class Script
 				else
 					begin
 						while (script = Script.current) and script.current_label
-							proc { foo = script.labels[script.current_label]; foo.untaint; $SAFE = 3; eval(foo, script_binding, script.name, 1) }.call
+							proc { foo = script.labels[script.current_label]; foo.untaint; $SAFE = 1; eval(foo, script_binding, script.name, 1) }.call
 							Script.current.get_next_label
 						end
 					rescue SystemExit
@@ -3088,7 +3088,7 @@ class ExecScript<Script
 				begin
 					script_binding = Scripting.new.script
 					eval('script = Script.current', script_binding, script.name.to_s)
-					proc { cmd_data.untaint; $SAFE = 3; eval(cmd_data, script_binding, script.name.to_s) }.call
+					proc { cmd_data.untaint; $SAFE = 1; eval(cmd_data, script_binding, script.name.to_s) }.call
 					Script.current.kill
 				rescue SystemExit
 					Script.current.kill
@@ -3169,7 +3169,7 @@ class ExecScript<Script
 						else
 							script_binding = Scripting.new.script
 							eval('script = Script.current', script_binding, script.name.to_s)
-							proc { cmd_data.untaint; $SAFE = 3; eval(cmd_data, script_binding, script.name.to_s) }.call
+							proc { cmd_data.untaint; $SAFE = 1; eval(cmd_data, script_binding, script.name.to_s) }.call
 						end
 						Script.current.kill
 					rescue SystemExit
@@ -8022,7 +8022,7 @@ module Games
 					line = options[:line]
 				end
 				if $SAFE < 3
-					proc { $SAFE = 3; eval(formula) }.call.to_f
+					proc { $SAFE = 1; eval(formula) }.call.to_f
 				else
 					eval(formula).to_f
 				end
@@ -8331,7 +8331,7 @@ module Games
 						end
 						begin
 							if $SAFE < 3
-								proc { $SAFE = 3; eval(@cast_proc) }.call
+								proc { $SAFE = 1; eval(@cast_proc) }.call
 							else
 								eval(@cast_proc)
 							end
@@ -8457,7 +8457,7 @@ module Games
 				if @@bonus_list.include?(args[0].to_s.gsub('_', '-'))
 					if @bonus[args[0].to_s.gsub('_', '-')]
 						if $SAFE < 3
-							proc { $SAFE = 3; eval(@bonus[args[0].to_s.gsub('_', '-')]) }.call.to_i
+							proc { $SAFE = 1; eval(@bonus[args[0].to_s.gsub('_', '-')]) }.call.to_i
 						else
 							eval(@bonus[args[0].to_s.gsub('_', '-')]).to_i
 						end
@@ -8492,7 +8492,7 @@ module Games
 						if formula
 							formula.untaint if formula.tainted?
 							if $SAFE < 3
-								proc { $SAFE = 3; eval(formula) }.call.to_i
+								proc { $SAFE = 1; eval(formula) }.call.to_i
 							else
 								eval(formula).to_i
 							end
