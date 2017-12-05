@@ -37,7 +37,7 @@
 #
 
 # Based on Lich 4.6.37
-LICH_VERSION = '4.7.24f'
+LICH_VERSION = '4.7.25f'
 TESTING = false
 PARSE_SAFE = (RUBY_VERSION >= '2.3') ? 1 : 3
 
@@ -4085,6 +4085,7 @@ class Map
 						room.paths.each { |paths| file.write "		<paths>#{paths.gsub(/(<|>|"|'|&)/) { escape[$1] }}</paths>\n" }
 						room.tags.each { |tag| file.write "		<tag>#{tag.gsub(/(<|>|"|'|&)/) { escape[$1] }}</tag>\n" }
 						room.unique_loot.to_a.each { |loot| file.write "		<unique_loot>#{loot.gsub(/(<|>|"|'|&)/) { escape[$1] }}</unique_loot>\n" }
+						room.room_objects.to_a.each { |loot| file.write "		<room_objects>#{loot.gsub(/(<|>|"|'|&)/) { escape[$1] }}</room_objects>\n" }
 						file.write "		<image name=\"#{room.image.gsub(/(<|>|"|'|&)/) { escape[$1] }}\" coords=\"#{room.image_coords.join(',')}\" />\n" if room.image and room.image_coords
 						room.wayto.keys.each { |target|
 							if room.timeto[target].class == Proc
