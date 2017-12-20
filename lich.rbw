@@ -5858,9 +5858,11 @@ def respond(first = "", *messages)
 		end
 		# Double-checked locking to avoid interrupting a stream and crashing the client
 		str_sent = false
-		until str_sent
-			wait_while { XMLData.in_stream }
-			str_sent = $_CLIENT_.puts_if(str) { !XMLData.in_stream }
+		if $_CLIENT_
+			until str_sent
+				wait_while { XMLData.in_stream }
+				str_sent = $_CLIENT_.puts_if(str) { !XMLData.in_stream }
+			end
 		end
 		if $_DETACHABLE_CLIENT_
 			str_sent = false
@@ -5890,10 +5892,22 @@ def _respond(first = "", *messages)
 		str.gsub!(/\r?\n/, "\r\n") if $frontend == 'genie'
 		messages.flatten.each { |message| str += sprintf("%s\r\n", message.to_s.chomp) }
 		str.split(/\r?\n/).each { |line| Script.new_script_output(line); Buffer.update(line, Buffer::SCRIPT_OUTPUT) } # fixme: strip/separate script output?
-		wait_while { XMLData.in_stream }
-		$_CLIENT_.puts(str)
+		if $_CLIENT_
+			until str_sent
+				wait_while { XMLData.in_stream }
+				str_sent = $_CLIENT_.puts_if(str) { !XMLData.in_stream }
+			end
+		end
 		if $_DETACHABLE_CLIENT_
-			$_DETACHABLE_CLIENT_.puts(str) rescue nil
+			str_sent = false
+			until str_sent
+				wait_while { XMLData.in_stream }
+				begin
+					str_sent = $_DETACHABLE_CLIENT_.puts_if(str) { !XMLData.in_stream }
+				rescue
+					break
+				end
+			end
 		end
 	rescue
 		puts $!
