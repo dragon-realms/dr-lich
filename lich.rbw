@@ -37,7 +37,7 @@
 #
 
 # Based on Lich 4.6.37
-LICH_VERSION = '4.7.25f'
+LICH_VERSION = '4.7.26f'
 TESTING = false
 PARSE_SAFE = (RUBY_VERSION >= '2.3') ? 1 : 3
 
@@ -1252,6 +1252,16 @@ class SynchronizedSocket
 	def puts(*args, &block)
 		@mutex.synchronize {
 			@delegate.puts *args, &block
+		}
+	end
+	def puts_if(*args)
+		@mutex.synchronize {
+			if yield
+				@delegate.puts *args
+				return true
+			else
+				return false
+			end
 		}
 	end
 	def write(*args, &block)
@@ -5846,10 +5856,24 @@ def respond(first = "", *messages)
 		elsif $frontend == 'profanity'
 			str = str.gsub('&', '&amp;').gsub('<', '&lt;').gsub('>', '&gt;')
 		end
-		wait_while { XMLData.in_stream }
-		$_CLIENT_.puts(str)
+		# Double-checked locking to avoid interrupting a stream and crashing the client
+		str_sent = false
+		if $_CLIENT_
+			until str_sent
+				wait_while { XMLData.in_stream }
+				str_sent = $_CLIENT_.puts_if(str) { !XMLData.in_stream }
+			end
+		end
 		if $_DETACHABLE_CLIENT_
-			$_DETACHABLE_CLIENT_.puts(str) rescue nil
+			str_sent = false
+			until str_sent
+				wait_while { XMLData.in_stream }
+				begin
+					str_sent = $_DETACHABLE_CLIENT_.puts_if(str) { !XMLData.in_stream }
+				rescue
+					break
+				end
+			end
 		end
 	rescue
 		puts $!
@@ -5868,10 +5892,22 @@ def _respond(first = "", *messages)
 		str.gsub!(/\r?\n/, "\r\n") if $frontend == 'genie'
 		messages.flatten.each { |message| str += sprintf("%s\r\n", message.to_s.chomp) }
 		str.split(/\r?\n/).each { |line| Script.new_script_output(line); Buffer.update(line, Buffer::SCRIPT_OUTPUT) } # fixme: strip/separate script output?
-		wait_while { XMLData.in_stream }
-		$_CLIENT_.puts(str)
+		if $_CLIENT_
+			until str_sent
+				wait_while { XMLData.in_stream }
+				str_sent = $_CLIENT_.puts_if(str) { !XMLData.in_stream }
+			end
+		end
 		if $_DETACHABLE_CLIENT_
-			$_DETACHABLE_CLIENT_.puts(str) rescue nil
+			str_sent = false
+			until str_sent
+				wait_while { XMLData.in_stream }
+				begin
+					str_sent = $_DETACHABLE_CLIENT_.puts_if(str) { !XMLData.in_stream }
+				rescue
+					break
+				end
+			end
 		end
 	rescue
 		puts $!
