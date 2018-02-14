@@ -6752,6 +6752,8 @@ def do_client(client_string)
 			respond
 			respond "   #{$clean_lich_char}exec <code>               executes the code as if it was in a script"
 			respond "   #{$clean_lich_char}e <code>                  ''"
+			respond "   #{$clean_lich_char}execn <code>              same as #{$clean_lich_char}exec but executes it untrusted so it can interact with other untrusted scripts"
+			respond "   #{$clean_lich_char}en <code>                 ''"
 			respond "   #{$clean_lich_char}execq <code>              same as #{$clean_lich_char}exec but without the script active and exited messages"
 			respond "   #{$clean_lich_char}eq <code>                 ''"
 			respond
