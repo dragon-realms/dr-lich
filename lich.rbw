@@ -1387,6 +1387,10 @@ class XMLParser
 		@current_style = String.new
 	end
 
+	def safe_to_respond?
+		!in_stream && !@bold && (!@current_style || @current_style.empty?)
+	end
+
 	def make_wound_gsl
 		@wound_gsl = sprintf("0b0%02b%02b%02b%02b%02b%02b%02b%02b%02b%02b%02b%02b%02b%02b",@injuries['nsys']['wound'],@injuries['leftEye']['wound'],@injuries['rightEye']['wound'],@injuries['back']['wound'],@injuries['abdomen']['wound'],@injuries['chest']['wound'],@injuries['leftHand']['wound'],@injuries['rightHand']['wound'],@injuries['leftLeg']['wound'],@injuries['rightLeg']['wound'],@injuries['leftArm']['wound'],@injuries['rightArm']['wound'],@injuries['neck']['wound'],@injuries['head']['wound'])
 	end
@@ -5860,16 +5864,16 @@ def respond(first = "", *messages)
 		str_sent = false
 		if $_CLIENT_
 			until str_sent
-				wait_while { XMLData.in_stream }
-				str_sent = $_CLIENT_.puts_if(str) { !XMLData.in_stream }
+				wait_while { !XMLData.safe_to_respond? }
+				str_sent = $_CLIENT_.puts_if(str) { XMLData.safe_to_respond? }
 			end
 		end
 		if $_DETACHABLE_CLIENT_
 			str_sent = false
 			until str_sent
-				wait_while { XMLData.in_stream }
+				wait_while { !XMLData.safe_to_respond? }
 				begin
-					str_sent = $_DETACHABLE_CLIENT_.puts_if(str) { !XMLData.in_stream }
+					str_sent = $_DETACHABLE_CLIENT_.puts_if(str) { XMLData.safe_to_respond? }
 				rescue
 					break
 				end
@@ -5895,16 +5899,16 @@ def _respond(first = "", *messages)
 		str_sent = false
 		if $_CLIENT_
 			until str_sent
-				wait_while { XMLData.in_stream }
-				str_sent = $_CLIENT_.puts_if(str) { !XMLData.in_stream }
+				wait_while { !XMLData.safe_to_respond? }
+				str_sent = $_CLIENT_.puts_if(str) { XMLData.safe_to_respond? }
 			end
 		end
 		if $_DETACHABLE_CLIENT_
 			str_sent = false
 			until str_sent
-				wait_while { XMLData.in_stream }
+				wait_while { !XMLData.safe_to_respond? }
 				begin
-					str_sent = $_DETACHABLE_CLIENT_.puts_if(str) { !XMLData.in_stream }
+					str_sent = $_DETACHABLE_CLIENT_.puts_if(str) { XMLData.safe_to_respond? }
 				rescue
 					break
 				end
