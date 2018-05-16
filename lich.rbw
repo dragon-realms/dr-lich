@@ -6697,7 +6697,7 @@ def do_client(client_string)
 					Script.new_downstream(msg)
 				end
 			end
-		elsif cmd =~ /^(?:exec|e)(q)?(n)? (.+)$/
+		elsif cmd =~ /^(?:exec|e)(n)?(q)? (.+)$/
 			cmd_data = $3
 			ExecScript.start(cmd_data, flags={ :quiet => $1, :trusted => $2.nil? })
 		elsif cmd =~ /^trust\s+(.*)/i
@@ -6760,6 +6760,8 @@ def do_client(client_string)
 			respond "   #{$clean_lich_char}en <code>                 ''"
 			respond "   #{$clean_lich_char}execq <code>              same as #{$clean_lich_char}exec but without the script active and exited messages"
 			respond "   #{$clean_lich_char}eq <code>                 ''"
+			respond "   #{$clean_lich_char}execnq <code>             same as #{$clean_lich_char}exec but without the script active and exited messages and executes it untrusted so it can interact with other untrusted scripts"
+			respond "   #{$clean_lich_char}enq <code>                ''"
 			respond
 			respond "   #{$clean_lich_char}trust <script name>       let the script do whatever it wants"
 			respond "   #{$clean_lich_char}distrust <script name>    restrict the script from doing things that might harm your computer"
