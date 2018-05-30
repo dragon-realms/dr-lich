@@ -36,8 +36,8 @@
 # Lich is maintained by Matt Lowe (tillmen@lichproject.org)
 #
 
-# Based on Lich 4.6.37
-LICH_VERSION = '4.8.0f'
+# Based on Lich 4.6.44
+LICH_VERSION = '4.9.0f'
 TESTING = false
 PARSE_SAFE = (RUBY_VERSION >= '2.3') ? 1 : 3
 
@@ -547,7 +547,7 @@ begin
    require 'gtk2'
    HAVE_GTK = true
 rescue LoadError
-   if ARGV.empty? or ARGV.any? { |arg| arg =~ /^--gui$/ } or not $stdout.isatty
+   if (ENV['RUN_BY_CRON'].nil? or ENV['RUN_BY_CRON'] == 'false') and ARGV.empty? or ARGV.any? { |arg| arg =~ /^--gui$/ } or not $stdout.isatty
       if defined?(Win32)
          r = Win32.MessageBox(:lpText => "Lich uses gtk2 to create windows, but it is not installed.  You can use Lich from the command line (ruby lich.rbw --help) or you can install gtk2 for a point and click interface.\n\nWould you like to install gtk2 now?", :lpCaption => "Lich v#{LICH_VERSION}", :uType => (Win32::MB_YESNO | Win32::MB_ICONQUESTION))
          if r == Win32::IDIYES
@@ -1685,8 +1685,17 @@ class XMLParser
                   DownstreamHook.remove('inventory_boxes_off')
                end
             end
+         elsif name == 'settingsInfo'
+            if game = attributes['instance']
+               if game == 'GS4'
+                  @game = 'GSIV'
+               elsif game == 'GS4X'
+                  @game = 'GSPlat'
+               else
+                  @game = game
+               end
+            end
          elsif (name == 'app') and (@name = attributes['char'])
-            @game = attributes['game']
             if @game.nil? or @game.empty?
                @game = 'unknown'
             end
@@ -3585,10 +3594,10 @@ class Map
             save_want_downstream = script.want_downstream
             script.want_downstream = true
             waitrt?
-            location_result = dothistimeout 'location', 15, /^You carefully survey your surroundings and guess that your current location is .*? or somewhere close to it\.$|^You can't do that while submerged under water\.$|^You can't do that\.$|^It would be rude not to give your full attention to the performance\.$|^You can't do that while hanging around up here!$|^You are too distracted by the difficulty of staying alive in these treacherous waters to do that\.$|^You carefully survey your surroundings but are unable to guess your current location\.$|^Not in pitch darkness you don't\.$/
+            location_result = dothistimeout 'location', 15, /^You carefully survey your surroundings and guess that your current location is .*? or somewhere close to it\.$|^You can't do that while submerged under water\.$|^You can't do that\.$|^It would be rude not to give your full attention to the performance\.$|^You can't do that while hanging around up here!$|^You are too distracted by the difficulty of staying alive in these treacherous waters to do that\.$|^You carefully survey your surroundings but are unable to guess your current location\.$|^Not in pitch darkness you don't\.$|^That is too difficult to consider here\.$/
             script.want_downstream = save_want_downstream
             @@current_location_count = XMLData.room_count
-            if location_result =~ /^You can't do that while submerged under water\.$|^You can't do that\.$|^It would be rude not to give your full attention to the performance\.$|^You can't do that while hanging around up here!$|^You are too distracted by the difficulty of staying alive in these treacherous waters to do that\.$|^You carefully survey your surroundings but are unable to guess your current location\.$|^Not in pitch darkness you don't\.$/
+            if location_result =~ /^You can't do that while submerged under water\.$|^You can't do that\.$|^It would be rude not to give your full attention to the performance\.$|^You can't do that while hanging around up here!$|^You are too distracted by the difficulty of staying alive in these treacherous waters to do that\.$|^You carefully survey your surroundings but are unable to guess your current location\.$|^Not in pitch darkness you don't\.$|^That is too difficult to consider here\.$/
                @@current_location = false
             else
                @@current_location = /^You carefully survey your surroundings and guess that your current location is (.*?) or somewhere close to it\.$/.match(location_result).captures.first
@@ -4789,14 +4798,14 @@ def move(dir='none', giveup_seconds=30, giveup_lines=30)
          Script.current.downstream_buffer.unshift(save_stream)
          Script.current.downstream_buffer.flatten!
          return false
-      elsif line =~ /^An unseen force prevents you\.$|^Sorry, you aren't allowed to enter here\.|^That looks like someplace only performers should go\.|^As you climb, your grip gives way and you fall down|^The clerk stops you from entering the partition and says, "I'll need to see your ticket!"$|^The guard stops you, saying, "Only members of registered groups may enter the Meeting Hall\.  If you'd like to visit, ask a group officer for a guest pass\."$|^An? .*? reaches over and grasps [A-Z][a-z]+ by the neck preventing (?:him|her) from being dragged anywhere\.$|^You'll have to wait, [A-Z][a-z]+ .* locker|^As you move toward the gate, you carelessly bump into the guard|^You attempt to enter the back of the shop, but a clerk stops you.  "Your reputation precedes you!/
+      elsif line =~ /^An unseen force prevents you\.$|^Sorry, you aren't allowed to enter here\.|^That looks like someplace only performers should go\.|^As you climb, your grip gives way and you fall down|^The clerk stops you from entering the partition and says, "I'll need to see your ticket!"$|^The guard stops you, saying, "Only members of registered groups may enter the Meeting Hall\.  If you'd like to visit, ask a group officer for a guest pass\."$|^An? .*? reaches over and grasps [A-Z][a-z]+ by the neck preventing (?:him|her) from being dragged anywhere\.$|^You'll have to wait, [A-Z][a-z]+ .* locker|^As you move toward the gate, you carelessly bump into the guard|^You attempt to enter the back of the shop, but a clerk stops you.  "Your reputation precedes you!|you notice that thick beams are placed across the entry with a small sign that reads, "Abandoned\."$|appears to be closed, perhaps you should try again later\?$/
          echo 'move: failed'
          fill_hands if need_full_hands
          Script.current.downstream_buffer.unshift(save_stream)
          Script.current.downstream_buffer.flatten!
          # return nil instead of false to show the direction shouldn't be removed from the map database
          return nil
-      elsif line =~ /^You grab [A-Z][a-z]+ and try to drag h(?:im|er), but s?he (?:is too heavy|doesn't budge)\.$|^Tentatively, you attempt to swim through the nook\.  After only a few feet, you begin to sink!  Your lungs burn from lack of air, and you begin to panic!  You frantically paddle back to safety!$|^Guards(?:wo)?man [A-Z][a-z]+ stops you and says, "(?:Stop\.|Halt!)  You need to make sure you check in|^You step into the root, but can see no way to climb the slippery tendrils inside\.  After a moment, you step back out\.$|^As you start .*? back to safe ground\.$|^You stumble a bit as you try to enter the pool but feel that your persistence will pay off\.$|^A shimmering field of magical crimson and gold energy flows through the area\.$|^Trying to judge the climb, you peer over the edge\.\s*A wave of dizziness hits you, and you back away from the .*\.$|^You approach the .*, but the steepness is intimidating\.$|^You make your way up the .*\.\s*Partway up, you make the mistake of looking down\. Struck by vertigo, you cling to the .* for a few moments, then slowly climb back down\.$|^You pick your way up the .*, but reach a point where your footing is questionable.\s*Reluctantly, you climb back down.$/
+      elsif line =~ /^You grab [A-Z][a-z]+ and try to drag h(?:im|er), but s?he (?:is too heavy|doesn't budge)\.$|^Tentatively, you attempt to swim through the nook\.  After only a few feet, you begin to sink!  Your lungs burn from lack of air, and you begin to panic!  You frantically paddle back to safety!$|^Guards(?:wo)?man [A-Z][a-z]+ stops you and says, "(?:Stop\.|Halt!)  You need to make sure you check in|^You step into the root, but can see no way to climb the slippery tendrils inside\.  After a moment, you step back out\.$|^As you start .*? back to safe ground\.$|^You stumble a bit as you try to enter the pool but feel that your persistence will pay off\.$|^A shimmering field of magical crimson and gold energy flows through the area\.$|^You attempt to navigate your way through the fog, but (?:quickly become entangled|get turned around)|^Trying to judge the climb, you peer over the edge\.\s*A wave of dizziness hits you, and you back away from the .*\.$|^You approach the .*, but the steepness is intimidating\.$|^You make your way up the .*\.\s*Partway up, you make the mistake of looking down\. Struck by vertigo, you cling to the .* for a few moments, then slowly climb back down\.$|^You pick your way up the .*, but reach a point where your footing is questionable.\s*Reluctantly, you climb back down.$/
          sleep 1
          waitrt?
          put_dir.call
@@ -4898,7 +4907,7 @@ def move(dir='none', giveup_seconds=30, giveup_lines=30)
          put_dir.call
       elsif line =~ /^You flick your hand (?:up|down)wards and focus your aura on your disk, but your disk only wobbles briefly\.$/
          put_dir.call
-      elsif line =~ /^You dive into the fast-moving river, but the current catches you and whips you back to shore, wet and battered\.$/
+      elsif line =~ /^You dive into the fast-moving river, but the current catches you and whips you back to shore, wet and battered\.$|^Running through the swampy terrain, you notice a wet patch in the bog/
          waitrt?
          put_dir.call
       elsif line == "You don't seem to be able to move to do that."
@@ -5985,29 +5994,29 @@ def empty_hands
          }
       else
          actions.unshift proc {
-            dothistimeout "get ##{left_hand.id}", 3, /^You (?:shield the opening of .*? from view as you |discreetly |carefully )?(?:remove|draw|grab|reach|slip|tuck|retrieve|already have)|^Get what\?$|^Why don't you leave some for others\?$|^You need a free hand/
+            dothistimeout "get ##{left_hand.id}", 3, /^You (?:shield the opening of .*? from view as you |discreetly |carefully |deftly )?(?:remove|draw|grab|reach|slip|tuck|retrieve|already have)|^Get what\?$|^Why don't you leave some for others\?$|^You need a free hand/
             20.times { break if (GameObj.left_hand.id == left_hand.id) or (GameObj.right_hand.id == left_hand.id); sleep 0.1 }
             if GameObj.right_hand.id == left_hand.id
                dothistimeout 'swap', 3, /^You don't have anything to swap!|^You swap/
             end
          }
          if lootsack
-            result = dothistimeout "put ##{left_hand.id} in ##{lootsack.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+            result = dothistimeout "put ##{left_hand.id} in ##{lootsack.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
             if result =~ /^You can't .+ It's closed!$/
                actions.push proc { fput "close ##{lootsack.id}" }
                dothistimeout "open ##{lootsack.id}", 3, /^You open|^That is already open\./
-               result = dothistimeout "put ##{left_hand.id} in ##{lootsack.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+               result = dothistimeout "put ##{left_hand.id} in ##{lootsack.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
             end
          else
             result = nil
          end
          if result.nil? or result =~ /^Your .*? won't fit in .*?\.$/
             for container in other_containers.call
-               result = dothistimeout "put ##{left_hand.id} in ##{container.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+               result = dothistimeout "put ##{left_hand.id} in ##{container.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
                if result =~ /^You can't .+ It's closed!$/
                   actions.push proc { fput "close ##{container.id}" }
                   dothistimeout "open ##{container.id}", 3, /^You open|^That is already open\./
-                  result = dothistimeout "put ##{left_hand.id} in ##{container.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+                  result = dothistimeout "put ##{left_hand.id} in ##{container.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
                end
                break if result =~ /^You (?:put|absent-mindedly drop|slip)/
             end
@@ -6016,47 +6025,42 @@ def empty_hands
    end
    if right_hand.id
       waitrt?
-      if XMLData.active_spells.keys.include?('Sonic Weapon Song') or XMLData.active_spells.keys.include?('1012')
-         type = right_hand.noun
-         if (type == 'sword') and right_hand.name =~ /short/
-            type = 'short'
-         elsif (type.downcase == 'hammer') and right_hand.name =~ /Hammer of Kai/
-            type = 'hammer of kai'
+      actions.unshift proc {
+         dothistimeout "get ##{right_hand.id}", 3, /^You (?:shield the opening of .*? from view as you |discreetly |carefully |deftly )?(?:remove|draw|grab|reach|slip|tuck|retrieve|already have)|^Get what\?$|^Why don't you leave some for others\?$|^You need a free hand/
+         20.times { break if GameObj.left_hand.id == right_hand.id or GameObj.right_hand.id == right_hand.id; sleep 0.1 }
+         if GameObj.left_hand.id == right_hand.id
+            dothistimeout 'swap', 3, /^You don't have anything to swap!|^You swap/
          end
-         actions.unshift proc {
-            if (sonic_weapon_song = Spell[1012]) and sonic_weapon_song.known? and sonic_weapon_song.affordable?
-               sonic_weapon_song.cast(type)
-            end
-         }
-         fput 'stop 1012'
+      }
+      if UserVars.weapon and UserVars.weaponsack and not UserVars.weapon.empty? and not UserVars.weaponsack.empty? and (right_hand.name =~ /#{Regexp.escape(UserVars.weapon.strip)}/i or right_hand.name =~ /#{Regexp.escape(UserVars.weapon).sub(' ', ' .*')}/i)
+         weaponsack = GameObj.inv.find { |obj| obj.name =~ /#{Regexp.escape(UserVars.weaponsack.strip)}/i } || GameObj.inv.find { |obj| obj.name =~ /#{Regexp.escape(UserVars.weaponsack).sub(' ', ' .*')}/i }
+      end
+      if weaponsack
+         result = dothistimeout "put ##{right_hand.id} in ##{weaponsack.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+         if result =~ /^You can't .+ It's closed!$/
+            actions.push proc { fput "close ##{weaponsack.id}" }
+            dothistimeout "open ##{weaponsack.id}", 3, /^You open|^That is already open\./
+            result = dothistimeout "put ##{right_hand.id} in ##{weaponsack.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+         end
+      elsif lootsack
+         result = dothistimeout "put ##{right_hand.id} in ##{lootsack.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+         if result =~ /^You can't .+ It's closed!$/
+            actions.push proc { fput "close ##{lootsack.id}" }
+            dothistimeout "open ##{lootsack.id}", 3, /^You open|^That is already open\./
+            result = dothistimeout "put ##{right_hand.id} in ##{lootsack.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+         end
       else
-         actions.unshift proc {
-            dothistimeout "get ##{right_hand.id}", 3, /^You (?:shield the opening of .*? from view as you |discreetly |carefully )?(?:remove|draw|grab|reach|slip|tuck|retrieve|already have)|^Get what\?$|^Why don't you leave some for others\?$|^You need a free hand/
-            20.times { break if GameObj.left_hand.id == right_hand.id or GameObj.right_hand.id == right_hand.id; sleep 0.1 }
-            if GameObj.left_hand.id == right_hand.id
-               dothistimeout 'swap', 3, /^You don't have anything to swap!|^You swap/
-            end
-         }
-         if lootsack
-            result = dothistimeout "put ##{right_hand.id} in ##{lootsack.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+         result = nil
+      end
+      if result.nil? or result =~ /^Your .*? won't fit in .*?\.$/
+         for container in other_containers.call
+            result = dothistimeout "put ##{right_hand.id} in ##{container.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
             if result =~ /^You can't .+ It's closed!$/
-               actions.push proc { fput "close ##{lootsack.id}" }
-               dothistimeout "open ##{lootsack.id}", 3, /^You open|^That is already open\./
-               result = dothistimeout "put ##{right_hand.id} in ##{lootsack.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+               actions.push proc { fput "close ##{container.id}" }
+               dothistimeout "open ##{container.id}", 3, /^You open|^That is already open\./
+               result = dothistimeout "put ##{right_hand.id} in ##{container.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
             end
-         else
-            result = nil
-         end
-         if result.nil? or result =~ /^Your .*? won't fit in .*?\.$/
-            for container in other_containers.call
-               result = dothistimeout "put ##{right_hand.id} in ##{container.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
-               if result =~ /^You can't .+ It's closed!$/
-                  actions.push proc { fput "close ##{container.id}" }
-                  dothistimeout "open ##{container.id}", 3, /^You open|^That is already open\./
-                  result = dothistimeout "put ##{right_hand.id} in ##{container.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
-               end
-               break if result =~ /^You (?:put|absent-mindedly drop|slip)/
-            end
+            break if result =~ /^You (?:put|absent-mindedly drop|slip)/
          end
       end
    end
@@ -6094,49 +6098,44 @@ def empty_hand
       other_containers_var
    }
    unless (right_hand.id.nil? and ([ Wounds.rightArm, Wounds.rightHand, Scars.rightArm, Scars.rightHand ].max < 3)) or (left_hand.id.nil? and ([ Wounds.leftArm, Wounds.leftHand, Scars.leftArm, Scars.leftHand ].max < 3))
-      if right_hand.id and ((!XMLData.active_spells.keys.include?('Sonic Weapon Song') and !XMLData.active_spells.keys.include?('1012')) or ([ Wounds.leftArm, Wounds.leftHand, Scars.leftArm, Scars.leftHand ].max == 3)) and ([ Wounds.rightArm, Wounds.rightHand, Scars.rightArm, Scars.rightHand ].max < 3 or [ Wounds.leftArm, Wounds.leftHand, Scars.leftArm, Scars.leftHand ].max = 3)
+      if right_hand.id and ([ Wounds.rightArm, Wounds.rightHand, Scars.rightArm, Scars.rightHand ].max < 3 or [ Wounds.leftArm, Wounds.leftHand, Scars.leftArm, Scars.leftHand ].max = 3)
          waitrt?
-         if XMLData.active_spells.keys.include?('Sonic Weapon Song') or XMLData.active_spells.keys.include?('1012')
-            type = right_hand.noun
-            if (type == 'sword') and right_hand.name =~ /short/
-               type = 'short'
-            elsif (type.downcase == 'hammer') and right_hand.name =~ /Hammer of Kai/
-               type = 'hammer of kai'
+         actions.unshift proc {
+            dothistimeout "get ##{right_hand.id}", 3, /^You (?:shield the opening of .*? from view as you |discreetly |carefully |deftly )?(?:remove|draw|grab|reach|slip|tuck|retrieve|already have)|^Get what\?$|^Why don't you leave some for others\?$|^You need a free hand/
+            20.times { break if GameObj.left_hand.id == right_hand.id or GameObj.right_hand.id == right_hand.id; sleep 0.1 }
+            if GameObj.left_hand.id == right_hand.id
+               dothistimeout 'swap', 3, /^You don't have anything to swap!|^You swap/
             end
-            actions.unshift proc {
-               if (sonic_weapon_song = Spell[1012]) and sonic_weapon_song.known? and sonic_weapon_song.affordable?
-                  sonic_weapon_song.cast(type)
-               end
-            }
-            fput 'stop 1012'
+         }
+         if UserVars.weapon and UserVars.weaponsack and not UserVars.weapon.empty? and not UserVars.weaponsack.empty? and (right_hand.name =~ /#{Regexp.escape(UserVars.weapon.strip)}/i or right_hand.name =~ /#{Regexp.escape(UserVars.weapon).sub(' ', ' .*')}/i)
+            weaponsack = GameObj.inv.find { |obj| obj.name =~ /#{Regexp.escape(UserVars.weaponsack.strip)}/i } || GameObj.inv.find { |obj| obj.name =~ /#{Regexp.escape(UserVars.weaponsack).sub(' ', ' .*')}/i }
+         end
+         if weaponsack
+            result = dothistimeout "put ##{right_hand.id} in ##{weaponsack.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+            if result =~ /^You can't .+ It's closed!$/
+               actions.push proc { fput "close ##{weaponsack.id}" }
+               dothistimeout "open ##{weaponsack.id}", 3, /^You open|^That is already open\./
+               result = dothistimeout "put ##{right_hand.id} in ##{weaponsack.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+            end
+         elsif lootsack
+            result = dothistimeout "put ##{right_hand.id} in ##{lootsack.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+            if result =~ /^You can't .+ It's closed!$/
+               actions.push proc { fput "close ##{lootsack.id}" }
+               dothistimeout "open ##{lootsack.id}", 3, /^You open|^That is already open\./
+               result = dothistimeout "put ##{right_hand.id} in ##{lootsack.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+            end
          else
-            actions.unshift proc {
-               dothistimeout "get ##{right_hand.id}", 3, /^You (?:shield the opening of .*? from view as you |discreetly |carefully )?(?:remove|draw|grab|reach|slip|tuck|retrieve|already have)|^Get what\?$|^Why don't you leave some for others\?$|^You need a free hand/
-               20.times { break if GameObj.left_hand.id == right_hand.id or GameObj.right_hand.id == right_hand.id; sleep 0.1 }
-               if GameObj.left_hand.id == right_hand.id
-                  dothistimeout 'swap', 3, /^You don't have anything to swap!|^You swap/
-               end
-            }
-            if lootsack
-               result = dothistimeout "put ##{right_hand.id} in ##{lootsack.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+            result = nil
+         end
+         if result.nil? or result =~ /^Your .*? won't fit in .*?\.$/
+            for container in other_containers.call
+               result = dothistimeout "put ##{right_hand.id} in ##{container.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
                if result =~ /^You can't .+ It's closed!$/
-                  actions.push proc { fput "close ##{lootsack.id}" }
-                  dothistimeout "open ##{lootsack.id}", 3, /^You open|^That is already open\./
-                  result = dothistimeout "put ##{right_hand.id} in ##{lootsack.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+                  actions.push proc { fput "close ##{container.id}" }
+                  dothistimeout "open ##{container.id}", 3, /^You open|^That is already open\./
+                  result = dothistimeout "put ##{right_hand.id} in ##{container.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
                end
-            else
-               result = nil
-            end
-            if result.nil? or result =~ /^Your .*? won't fit in .*?\.$/
-               for container in other_containers.call
-                  result = dothistimeout "put ##{right_hand.id} in ##{container.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
-                  if result =~ /^You can't .+ It's closed!$/
-                     actions.push proc { fput "close ##{container.id}" }
-                     dothistimeout "open ##{container.id}", 3, /^You open|^That is already open\./
-                     result = dothistimeout "put ##{right_hand.id} in ##{container.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
-                  end
-                  break if result =~ /^You (?:put|absent-mindedly drop|slip)/
-               end
+               break if result =~ /^You (?:put|absent-mindedly drop|slip)/
             end
          end
       else
@@ -6151,29 +6150,29 @@ def empty_hand
             }
          else
             actions.unshift proc {
-               dothistimeout "get ##{left_hand.id}", 3, /^You (?:shield the opening of .*? from view as you |discreetly |carefully )?(?:remove|draw|grab|reach|slip|tuck|retrieve|already have)|^Get what\?$|^Why don't you leave some for others\?$|^You need a free hand/
+               dothistimeout "get ##{left_hand.id}", 3, /^You (?:shield the opening of .*? from view as you |discreetly |carefully |deftly )?(?:remove|draw|grab|reach|slip|tuck|retrieve|already have)|^Get what\?$|^Why don't you leave some for others\?$|^You need a free hand/
                20.times { break if GameObj.left_hand.id == left_hand.id or GameObj.right_hand.id == left_hand.id; sleep 0.1 }
                if GameObj.right_hand.id == left_hand.id
                   dothistimeout 'swap', 3, /^You don't have anything to swap!|^You swap/
                end
             }
             if lootsack
-               result = dothistimeout "put ##{left_hand.id} in ##{lootsack.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+               result = dothistimeout "put ##{left_hand.id} in ##{lootsack.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
                if result =~ /^You can't .+ It's closed!$/
                   actions.push proc { fput "close ##{lootsack.id}" }
                   dothistimeout "open ##{lootsack.id}", 3, /^You open|^That is already open\./
-                  result = dothistimeout "put ##{left_hand.id} in ##{lootsack.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+                  result = dothistimeout "put ##{left_hand.id} in ##{lootsack.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
                end
             else
                result = nil
             end
             if result.nil? or result =~ /^Your .*? won't fit in .*?\.$/
                for container in other_containers.call
-                  result = dothistimeout "put ##{left_hand.id} in ##{container.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+                  result = dothistimeout "put ##{left_hand.id} in ##{container.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
                   if result =~ /^You can't .+ It's closed!$/
                      actions.push proc { fput "close ##{container.id}" }
                      dothistimeout "open ##{container.id}", 3, /^You open|^That is already open\./
-                     result = dothistimeout "put ##{left_hand.id} in ##{container.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+                     result = dothistimeout "put ##{left_hand.id} in ##{container.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
                   end
                   break if result =~ /^You (?:put|absent-mindedly drop|slip)/
                end
@@ -6215,47 +6214,42 @@ def empty_right_hand
    }
    if right_hand.id
       waitrt?
-      if XMLData.active_spells.keys.include?('Sonic Weapon Song') or XMLData.active_spells.keys.include?('1012')
-         type = right_hand.noun
-         if (type == 'sword') and right_hand.name =~ /short/
-            type = 'short'
-         elsif (type.downcase == 'hammer') and right_hand.name =~ /Hammer of Kai/
-            type = 'hammer of kai'
+      actions.unshift proc {
+         dothistimeout "get ##{right_hand.id}", 3, /^You (?:shield the opening of .*? from view as you |discreetly |carefully |deftly )?(?:remove|draw|grab|reach|slip|tuck|retrieve|already have)|^Get what\?$|^Why don't you leave some for others\?$|^You need a free hand/
+         20.times { break if GameObj.left_hand.id == right_hand.id or GameObj.right_hand.id == right_hand.id; sleep 0.1 }
+         if GameObj.left_hand.id == right_hand.id
+            dothistimeout 'swap', 3, /^You don't have anything to swap!|^You swap/
          end
-         actions.unshift proc {
-            if (sonic_weapon_song = Spell[1012]) and sonic_weapon_song.known? and sonic_weapon_song.affordable?
-               sonic_weapon_song.cast(type)
-            end
-         }
-         fput 'stop 1012'
+      }
+      if UserVars.weapon and UserVars.weaponsack and not UserVars.weapon.empty? and not UserVars.weaponsack.empty? and (right_hand.name =~ /#{Regexp.escape(UserVars.weapon.strip)}/i or right_hand.name =~ /#{Regexp.escape(UserVars.weapon).sub(' ', ' .*')}/i)
+         weaponsack = GameObj.inv.find { |obj| obj.name =~ /#{Regexp.escape(UserVars.weaponsack.strip)}/i } || GameObj.inv.find { |obj| obj.name =~ /#{Regexp.escape(UserVars.weaponsack).sub(' ', ' .*')}/i }
+      end
+      if weaponsack
+         result = dothistimeout "put ##{right_hand.id} in ##{weaponsack.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+         if result =~ /^You can't .+ It's closed!$/
+            actions.push proc { fput "close ##{weaponsack.id}" }
+            dothistimeout "open ##{weaponsack.id}", 3, /^You open|^That is already open\./
+            result = dothistimeout "put ##{right_hand.id} in ##{weaponsack.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+         end
+      elsif lootsack
+         result = dothistimeout "put ##{right_hand.id} in ##{lootsack.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+         if result =~ /^You can't .+ It's closed!$/
+            actions.push proc { fput "close ##{lootsack.id}" }
+            dothistimeout "open ##{lootsack.id}", 3, /^You open|^That is already open\./
+            result = dothistimeout "put ##{right_hand.id} in ##{lootsack.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+         end
       else
-         actions.unshift proc {
-            dothistimeout "get ##{right_hand.id}", 3, /^You (?:shield the opening of .*? from view as you |discreetly |carefully )?(?:remove|draw|grab|reach|slip|tuck|retrieve|already have)|^Get what\?$|^Why don't you leave some for others\?$|^You need a free hand/
-            20.times { break if GameObj.left_hand.id == right_hand.id or GameObj.right_hand.id == right_hand.id; sleep 0.1 }
-            if GameObj.left_hand.id == right_hand.id
-               dothistimeout 'swap', 3, /^You don't have anything to swap!|^You swap/
-            end
-         }
-         if lootsack
-            result = dothistimeout "put ##{right_hand.id} in ##{lootsack.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+         result = nil
+      end
+      if result.nil? or result =~ /^Your .*? won't fit in .*?\.$/
+         for container in other_containers.call
+            result = dothistimeout "put ##{right_hand.id} in ##{container.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
             if result =~ /^You can't .+ It's closed!$/
-               actions.push proc { fput "close ##{lootsack.id}" }
-               dothistimeout "open ##{lootsack.id}", 3, /^You open|^That is already open\./
-               result = dothistimeout "put ##{right_hand.id} in ##{lootsack.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+               actions.push proc { fput "close ##{container.id}" }
+               dothistimeout "open ##{container.id}", 3, /^You open|^That is already open\./
+               result = dothistimeout "put ##{right_hand.id} in ##{container.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
             end
-         else
-            result = nil
-         end
-         if result.nil? or result =~ /^Your .*? won't fit in .*?\.$/
-            for container in other_containers.call
-               result = dothistimeout "put ##{right_hand.id} in ##{container.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
-               if result =~ /^You can't .+ It's closed!$/
-                  actions.push proc { fput "close ##{container.id}" }
-                  dothistimeout "open ##{container.id}", 3, /^You open|^That is already open\./
-                  result = dothistimeout "put ##{right_hand.id} in ##{container.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
-               end
-               break if result =~ /^You (?:put|absent-mindedly drop|slip)/
-            end
+            break if result =~ /^You (?:put|absent-mindedly drop|slip)/
          end
       end
    end
@@ -6303,29 +6297,29 @@ def empty_left_hand
          }
       else
          actions.unshift proc {
-            dothistimeout "get ##{left_hand.id}", 3, /^You (?:shield the opening of .*? from view as you |discreetly |carefully )?(?:remove|draw|grab|reach|slip|tuck|retrieve|already have)|^Get what\?$|^Why don't you leave some for others\?$|^You need a free hand/
+            dothistimeout "get ##{left_hand.id}", 3, /^You (?:shield the opening of .*? from view as you |discreetly |carefully |deftly )?(?:remove|draw|grab|reach|slip|tuck|retrieve|already have)|^Get what\?$|^Why don't you leave some for others\?$|^You need a free hand/
             20.times { break if GameObj.left_hand.id == left_hand.id or GameObj.right_hand.id == left_hand.id; sleep 0.1 }
             if GameObj.right_hand.id == left_hand.id
                dothistimeout 'swap', 3, /^You don't have anything to swap!|^You swap/
             end
          }
          if lootsack
-            result = dothistimeout "put ##{left_hand.id} in ##{lootsack.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+            result = dothistimeout "put ##{left_hand.id} in ##{lootsack.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
             if result =~ /^You can't .+ It's closed!$/
                actions.push proc { fput "close ##{lootsack.id}" }
                dothistimeout "open ##{lootsack.id}", 3, /^You open|^That is already open\./
-               dothistimeout "put ##{left_hand.id} in ##{lootsack.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+               dothistimeout "put ##{left_hand.id} in ##{lootsack.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
             end
          else
             result = nil
          end
          if result.nil? or result =~ /^Your .*? won't fit in .*?\.$/
             for container in other_containers.call
-               result = dothistimeout "put ##{left_hand.id} in ##{container.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+               result = dothistimeout "put ##{left_hand.id} in ##{container.id}", 4, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
                if result =~ /^You can't .+ It's closed!$/
                   actions.push proc { fput "close ##{container.id}" }
                   dothistimeout "open ##{container.id}", 3, /^You open|^That is already open\./
-                  result = dothistimeout "put ##{left_hand.id} in ##{container.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
+                  result = dothistimeout "put ##{left_hand.id} in ##{container.id}", 3, /^You (?:attempt to shield .*? from view as you |discreetly |carefully |absent-mindedly )?(?:put|place|slip|tuck|add|drop|untie your|find an incomplete bundle|wipe off .*? and sheathe|secure)|^A sigh of grateful pleasure can be heard as you feed .*? to your|^As you place|^I could not find what you were referring to\.$|^Your bundle would be too large|^The .+ is too large to be bundled\.|^As you place your|^The .*? is already a bundle|^Your .*? won't fit in .*?\.$|^You can't .+ It's closed!$/
                end
                break if result =~ /^You (?:put|absent-mindedly drop|slip)/
             end
@@ -7208,7 +7202,10 @@ module Games
                            end
                            $_CLIENT_.write(alt_string)
                         end
-                        unless $_SERVERSTRING_ =~ /^<setting/
+                        unless $_SERVERSTRING_ =~ /^<settings /
+                           if $_SERVERSTRING_ =~ /^<settingsInfo .*?space not found /
+                              $_SERVERSTRING_.sub!('space not found', '')
+                           end
                            begin
                               REXML::Document.parse_stream($_SERVERSTRING_, XMLData)
                               # XMLData.parse($_SERVERSTRING_)
@@ -8436,7 +8433,7 @@ module Games
                            loop {
                               waitrt?
                               waitcastrt?
-                              prepare_result = dothistimeout "prepare #{@num}", 8, /^You already have a spell readied!  You must RELEASE it if you wish to prepare another!$|^Your spell(?:song)? is ready\.|^You can't think clearly enough to prepare a spell!$|^You are concentrating too intently .*?to prepare a spell\.$|^You are too injured to make that dextrous of a movement|^The searing pain in your throat makes that impossible|^But you don't have any mana!\.$|^You can't make that dextrous of a move!$|^As you begin to prepare the spell the wind blows small objects at you thwarting your attempt\.$|^You do not know that spell!$|^All you manage to do is cough up some blood\.$/
+                              prepare_result = dothistimeout "prepare #{@num}", 8, /^You already have a spell readied!  You must RELEASE it if you wish to prepare another!$|^Your spell(?:song)? is ready\.|^You can't think clearly enough to prepare a spell!$|^You are concentrating too intently .*?to prepare a spell\.$|^You are too injured to make that dextrous of a movement|^The searing pain in your throat makes that impossible|^But you don't have any mana!\.$|^You can't make that dextrous of a move!$|^As you begin to prepare the spell the wind blows small objects at you thwarting your attempt\.$|^You do not know that spell!$|^All you manage to do is cough up some blood\.$|The incantations of countless spells swirl through your mind as a golden light flashes before your eyes\./
                               if prepare_result =~ /^Your spell(?:song)? is ready\./
                                  break
                               elsif prepare_result == 'You already have a spell readied!  You must RELEASE it if you wish to prepare another!'
@@ -8446,22 +8443,22 @@ module Games
                                     sleep 0.1
                                     return false
                                  end
-                              elsif prepare_result =~ /^You can't think clearly enough to prepare a spell!$|^You are concentrating too intently .*?to prepare a spell\.$|^You are too injured to make that dextrous of a movement|^The searing pain in your throat makes that impossible|^But you don't have any mana!\.$|^You can't make that dextrous of a move!$|^As you begin to prepare the spell the wind blows small objects at you thwarting your attempt\.$|^You do not know that spell!$|^All you manage to do is cough up some blood\.$/
+                              elsif prepare_result =~ /^You can't think clearly enough to prepare a spell!$|^You are concentrating too intently .*?to prepare a spell\.$|^You are too injured to make that dextrous of a movement|^The searing pain in your throat makes that impossible|^But you don't have any mana!\.$|^You can't make that dextrous of a move!$|^As you begin to prepare the spell the wind blows small objects at you thwarting your attempt\.$|^You do not know that spell!$|^All you manage to do is cough up some blood\.$|The incantations of countless spells swirl through your mind as a golden light flashes before your eyes\./
                                  sleep 0.1
                                  return prepare_result
                               end
                            }
                         end
                      end
-                     waitcastrt? unless Spell[515].active? and (checkprep != 'None')
+                     waitcastrt?
                      if @stance and checkstance != 'offensive'
                         put 'stance offensive'
                         # dothistimeout 'stance offensive', 5, /^You (?:are now in|move into) an? offensive stance|^You are unable to change your stance\.$/
                      end
                      if results_of_interest.class == Regexp
-                        results_regex = /^(?:Cast|Sing) Roundtime [0-9]+ Seconds\.$|^Cast at what\?$|^But you don't have any mana!$|^\[Spell Hindrance for|^You don't have a spell prepared!$|keeps? the spell from working\.|^Be at peace my child, there is no need for spells of war in here\.$|Spells of War cannot be cast|^As you focus on your magic, your vision swims with a swirling haze of crimson\.$|^Your magic fizzles ineffectually\.$|^All you manage to do is cough up some blood\.$|^And give yourself away!  Never!$|^You are unable to do that right now\.$|^You feel a sudden rush of power as you absorb [0-9]+ mana!$|^You are unable to drain it!$|leaving you casting at nothing but thin air!$|^You don't seem to be able to move to do that\.$|^Provoking a GameMaster is not such a good idea\.$|^You can't think clearly enough to prepare a spell!$|^You do not currently have a target\.$|#{results_of_interest.to_s}/
+                        results_regex = /^(?:Cast|Sing) Roundtime [0-9]+ Seconds?\.$|^Cast at what\?$|^But you don't have any mana!$|^\[Spell Hindrance for|^You don't have a spell prepared!$|keeps? the spell from working\.|^Be at peace my child, there is no need for spells of war in here\.$|Spells of War cannot be cast|^As you focus on your magic, your vision swims with a swirling haze of crimson\.$|^Your magic fizzles ineffectually\.$|^All you manage to do is cough up some blood\.$|^And give yourself away!  Never!$|^You are unable to do that right now\.$|^You feel a sudden rush of power as you absorb [0-9]+ mana!$|^You are unable to drain it!$|leaving you casting at nothing but thin air!$|^You don't seem to be able to move to do that\.$|^Provoking a GameMaster is not such a good idea\.$|^You can't think clearly enough to prepare a spell!$|^You do not currently have a target\.$|The incantations of countless spells swirl through your mind as a golden light flashes before your eyes\.|#{results_of_interest.to_s}/
                      else
-                        results_regex = /^(?:Cast|Sing) Roundtime [0-9]+ Seconds\.$|^Cast at what\?$|^But you don't have any mana!$|^\[Spell Hindrance for|^You don't have a spell prepared!$|keeps? the spell from working\.|^Be at peace my child, there is no need for spells of war in here\.$|Spells of War cannot be cast|^As you focus on your magic, your vision swims with a swirling haze of crimson\.$|^Your magic fizzles ineffectually\.$|^All you manage to do is cough up some blood\.$|^And give yourself away!  Never!$|^You are unable to do that right now\.$|^You feel a sudden rush of power as you absorb [0-9]+ mana!$|^You are unable to drain it!$|leaving you casting at nothing but thin air!$|^You don't seem to be able to move to do that\.$|^Provoking a GameMaster is not such a good idea\.$|^You can't think clearly enough to prepare a spell!$|^You do not currently have a target\.$/
+                        results_regex = /^(?:Cast|Sing) Roundtime [0-9]+ Seconds?\.$|^Cast at what\?$|^But you don't have any mana!$|^\[Spell Hindrance for|^You don't have a spell prepared!$|keeps? the spell from working\.|^Be at peace my child, there is no need for spells of war in here\.$|Spells of War cannot be cast|^As you focus on your magic, your vision swims with a swirling haze of crimson\.$|^Your magic fizzles ineffectually\.$|^All you manage to do is cough up some blood\.$|^And give yourself away!  Never!$|^You are unable to do that right now\.$|^You feel a sudden rush of power as you absorb [0-9]+ mana!$|^You are unable to drain it!$|leaving you casting at nothing but thin air!$|^You don't seem to be able to move to do that\.$|^Provoking a GameMaster is not such a good idea\.$|^You can't think clearly enough to prepare a spell!$|^You do not currently have a target\.$|The incantations of countless spells swirl through your mind as a golden light flashes before your eyes\./
                      end
                      cast_result = dothistimeout cast_cmd, 5, results_regex
                      if cast_result == "You don't seem to be able to move to do that."
@@ -8531,6 +8528,9 @@ module Games
                   else
                      formula = @cost[args[0].to_s.sub(/_formula$/, '').sub(/_cost$/, '')]['self'].dup
                   end
+               end
+               if args[0].to_s =~ /mana/ and Spell[597].active? # Rapid Fire Penalty
+                  formula = "#{formula}+5"
                end
                if options[:multicast].to_i > 1
                   formula = "(#{formula})*#{options[:multicast].to_i}"
@@ -9390,7 +9390,7 @@ reconnect_if_wanted = proc {
       Lich.log 'info: reconnecting...'
       if (RUBY_PLATFORM =~ /mingw|win/i) and (RUBY_PLATFORM !~ /darwin/i)
          if $frontend == 'stormfront'
-            system 'taskkill /FI "WINDOWTITLE eq [GSIV: ' + Char.name + '*"'
+            system 'taskkill /FI "WINDOWTITLE eq [GSIV: ' + Char.name + '*"' # fixme: window title changing to Gemstone IV: Char.name # name optional
          end
          args = [ 'start rubyw.exe' ]
       else
@@ -9746,10 +9746,6 @@ module CharSetting
    end
    def CharSetting.to_hash(scope=':')
       CharSettings.to_hash
-   end
-end
-module Vars
-   def Vars.save
    end
 end
 class StringProc
@@ -11320,7 +11316,7 @@ main_thread = Thread.new {
          custom_launch_entry = Gtk::ComboBoxEntry.new()
          custom_launch_entry.child.text = "(enter custom launch command)"
          custom_launch_entry.append_text("Wizard.Exe /GGS /H127.0.0.1 /P%port% /K%key%")
-         custom_launch_entry.append_text("Stormfront.exe /GGS /H127.0.0.1 /P%port% /K%key%")
+         custom_launch_entry.append_text("Stormfront.exe /GGS/Hlocalhost/P%port%/K%key%")
          custom_launch_dir = Gtk::ComboBoxEntry.new()
          custom_launch_dir.child.text = "(enter working directory for command)"
          custom_launch_dir.append_text("../wizard")
@@ -12326,7 +12322,7 @@ main_thread = Thread.new {
             # take the version string from the client, ignore it, and ask the server for xml
             #
             $_CLIENT_.gets
-            client_string = "/FE:WIZARD /VERSION:1.0.1.22 /P:#{RUBY_PLATFORM} /XML"
+            client_string = "/FE:STORMFRONT /VERSION:1.0.1.26 /P:#{RUBY_PLATFORM} /XML"
             $_CLIENTBUFFER_.push(client_string.dup)
             Game._puts(client_string)
             #
