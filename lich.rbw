@@ -37,7 +37,7 @@
 #
 
 # Based on Lich 4.6.44
-LICH_VERSION = '4.10.0f'
+LICH_VERSION = '4.11.0f'
 TESTING = false
 PARSE_SAFE = (RUBY_VERSION >= '2.3') ? 1 : 3
 
@@ -1685,17 +1685,8 @@ class XMLParser
                   DownstreamHook.remove('inventory_boxes_off')
                end
             end
-         elsif name == 'settingsInfo'
-            if game = attributes['instance']
-               if game == 'GS4'
-                  @game = 'GSIV'
-               elsif game == 'GS4X'
-                  @game = 'GSPlat'
-               else
-                  @game = game
-               end
-            end
          elsif (name == 'app') and (@name = attributes['char'])
+            @game = attributes['game']
             if @game.nil? or @game.empty?
                @game = 'unknown'
             end
