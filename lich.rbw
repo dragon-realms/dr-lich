@@ -3180,7 +3180,7 @@ class ExecScript<Script
    attr_reader :cmd_data
    def ExecScript.start(cmd_data, options={})
       options = { :quiet => true } if options == true
-      if ($SAFE < 2) and (options[:trusted] or KEEP_SAFE)
+      if ($SAFE < 2) and (options[:trusted] or !KEEP_SAFE)
          unless new_script = ExecScript.new(cmd_data, options)
             respond '--- Lich: failed to start exec script'
             return false
@@ -6694,7 +6694,7 @@ def do_client(client_string)
          end
       elsif cmd =~ /^(?:exec|e)(q)?(n)? (.+)$/
          cmd_data = $3
-         ExecScript.start(cmd_data, flags={ :quiet => $1, :trusted => $2.nil? })
+         ExecScript.start(cmd_data, flags={ :quiet => $1, :trusted => ($2.nil? and KEEP_SAFE)  })
       elsif cmd =~ /^trust\s+(.*)/i
          script_name = $1
          if KEEP_SAFE
