@@ -36,10 +36,10 @@
 # Lich is maintained by Matt Lowe (tillmen@lichproject.org)
 #
 
-# Based on Lich 4.6.44
-LICH_VERSION = '4.11.0f'
+# Based on Lich 4.6.49
+LICH_VERSION = '4.12.0f'
 TESTING = false
-PARSE_SAFE = (RUBY_VERSION >= '2.3') ? 1 : 3
+KEEP_SAFE = RUBY_VERSION =~ /^2\.[012]\./
 
 if RUBY_VERSION !~ /^2/
    if (RUBY_PLATFORM =~ /mingw|win/) and (RUBY_PLATFORM !~ /darwin/i)
@@ -662,7 +662,9 @@ module Lich
          Lich.db.execute("CREATE TABLE IF NOT EXISTS script_auto_settings (script TEXT NOT NULL, scope TEXT, hash BLOB, PRIMARY KEY(script, scope));")
          Lich.db.execute("CREATE TABLE IF NOT EXISTS lich_settings (name TEXT NOT NULL, value TEXT, PRIMARY KEY(name));")
          Lich.db.execute("CREATE TABLE IF NOT EXISTS uservars (scope TEXT NOT NULL, hash BLOB, PRIMARY KEY(scope));")
+         if KEEP_SAFE
          Lich.db.execute("CREATE TABLE IF NOT EXISTS trusted_scripts (name TEXT NOT NULL);")
+         end
          Lich.db.execute("CREATE TABLE IF NOT EXISTS simu_game_entry (character TEXT NOT NULL, game_code TEXT NOT NULL, data BLOB, PRIMARY KEY(character, game_code));")
          Lich.db.execute("CREATE TABLE IF NOT EXISTS enable_inventory_boxes (player_id INTEGER NOT NULL, PRIMARY KEY(player_id));")
       rescue SQLite3::BusyException
@@ -1229,12 +1231,8 @@ class StringProc
       Proc
    end
    def call(*a)
-      if $SAFE < 3
-         proc { $SAFE = PARSE_SAFE; eval(@string) }.call
-      else
-         eval(@string)
+      proc { begin; $SAFE = 3; rescue; nil; end; eval(@string) }.call
       end
-   end
    def _dump(d=nil)
       @string
    end
@@ -2483,15 +2481,21 @@ class Script
             trusted = false
             script_obj = WizardScript.new("#{SCRIPT_DIR}/#{file_name}", script_args)
          else
-            begin
-               trusted = Lich.db.get_first_value('SELECT name FROM trusted_scripts WHERE name=?;', script_name.encode('UTF-8'))
-            rescue SQLite3::BusyException
-               sleep 0.1
-               retry
+            if script_obj.labels.length > 1
+               trusted = false
+            elsif proc { begin; $SAFE = 3; true; rescue; false; end }.call
+               begin
+                  trusted = Lich.db.get_first_value('SELECT name FROM trusted_scripts WHERE name=?;', script_name.encode('UTF-8'))
+                  rescue SQLite3::BusyException
+                     sleep 0.1
+                  retry
+         end
+            else
+               trusted = true
             end
             script_obj = Script.new(:file => "#{SCRIPT_DIR}/#{file_name}", :args => script_args, :quiet => options[:quiet])
          end
-         if trusted and not script_obj.labels.length > 1
+         if trusted
             script_binding = TRUSTED_SCRIPT_BINDING.call
          else
             script_binding = Scripting.new.script
@@ -2557,7 +2561,7 @@ class Script
             else
                begin
                   while (script = Script.current) and script.current_label
-                     proc { foo = script.labels[script.current_label]; foo.untaint; $SAFE = PARSE_SAFE; eval(foo, script_binding, script.name, 1) }.call
+                     proc { foo = script.labels[script.current_label]; foo.untaint; begin; $SAFE = 3; rescue; nil; end; eval(foo, script_binding, script.name, 1) }.call
                      Script.current.get_next_label
                   end
                rescue SystemExit
@@ -2812,6 +2816,7 @@ class Script
          return false
       end
    end
+   if KEEP_SAFE
    def Script.trust(script_name)
       # fixme: case sensitive blah blah
       if ($SAFE == 0) and not caller.any? { |c| c =~ /eval|run/ }
@@ -2855,6 +2860,17 @@ class Script
          retry
       end
       list
+      end
+   else
+      def Script.trust(script_name)
+         true
+      end
+      def Script.distrust(script_name)
+         false
+      end
+      def Script.list_trusted
+         []
+      end
    end
    def initialize(args)
       @file_name = args[:file]
@@ -3103,7 +3119,7 @@ class ExecScript<Script
             begin
                script_binding = Scripting.new.script
                eval('script = Script.current', script_binding, script.name.to_s)
-               proc { cmd_data.untaint; $SAFE = PARSE_SAFE; eval(cmd_data, script_binding, script.name.to_s) }.call
+               proc { cmd_data.untaint; $SAFE = 3; eval(cmd_data, script_binding, script.name.to_s) }.call
                Script.current.kill
             rescue SystemExit
                Script.current.kill
@@ -3164,9 +3180,7 @@ class ExecScript<Script
    attr_reader :cmd_data
    def ExecScript.start(cmd_data, options={})
       options = { :quiet => true } if options == true
-      if $SAFE > 0
-         @@elevated_start.call(cmd_data, options)
-      else
+      if ($SAFE < 2) and (options[:trusted] or !KEEP_SAFE)
          unless new_script = ExecScript.new(cmd_data, options)
             respond '--- Lich: failed to start exec script'
             return false
@@ -3177,15 +3191,9 @@ class ExecScript<Script
                Thread.current.priority = 1
                respond("--- Lich: #{script.name} active.") unless script.quiet
                begin
-                  if options[:trusted]
                      script_binding = TRUSTED_SCRIPT_BINDING.call
                      eval('script = Script.current', script_binding, script.name.to_s)
                      eval(cmd_data, script_binding, script.name.to_s)
-                  else
-                     script_binding = Scripting.new.script
-                     eval('script = Script.current', script_binding, script.name.to_s)
-                     proc { cmd_data.untaint; $SAFE = PARSE_SAFE; eval(cmd_data, script_binding, script.name.to_s) }.call
-                  end
                   Script.current.kill
                rescue SystemExit
                   Script.current.kill
@@ -3242,6 +3250,8 @@ class ExecScript<Script
          }
          new_script.thread_group.add(new_thread)
          new_script
+      else
+         @@elevated_start.call(cmd_data, options)
       end
    end
    def initialize(cmd_data, flags=Hash.new)
@@ -6684,24 +6694,35 @@ def do_client(client_string)
          end
       elsif cmd =~ /^(?:exec|e)(q)?(n)? (.+)$/
          cmd_data = $3
-         ExecScript.start(cmd_data, flags={ :quiet => $1, :trusted => $2.nil? })
+         ExecScript.start(cmd_data, flags={ :quiet => $1, :trusted => ($2.nil? and KEEP_SAFE)  })
       elsif cmd =~ /^trust\s+(.*)/i
          script_name = $1
+         if KEEP_SAFE
          if File.exists?("#{SCRIPT_DIR}/#{script_name}.lic")
             if Script.trust(script_name)
                respond "--- Lich: '#{script_name}' is now a trusted script."
+               else
+                  respond "--- Lich: '#{script_name}' is already trusted."
             end
          else
             respond "--- Lich: could not find script: #{script_name}"
          end
+         else
+            respond "--- Lich: this feature isn't available in this version of Ruby "
+         end
       elsif cmd =~ /^(?:dis|un)trust\s+(.*)/i
          script_name = $1
+         if KEEP_SAFE
          if Script.distrust(script_name)
             respond "--- Lich: '#{script_name}' is no longer a trusted script."
          else
             respond "--- Lich: '#{script_name}' was not found in the trusted script list."
+            end
+         else
+            respond "--- Lich: this feature isn't available in this version of Ruby "
          end
       elsif cmd =~ /^list\s?(?:un)?trust(?:ed)?$|^lt$/i
+         if KEEP_SAFE
          list = Script.list_trusted
          if list.empty?
             respond "--- Lich: no scripts are trusted"
@@ -6709,6 +6730,9 @@ def do_client(client_string)
             respond "--- Lich: trusted scripts: #{list.join(', ')}"
          end
          list = nil
+         else
+            respond "--- Lich: this feature isn't available in this version of Ruby "
+         end
       elsif cmd =~ /^help$/i
          respond
          respond "Lich v#{LICH_VERSION}"
@@ -6748,11 +6772,13 @@ def do_client(client_string)
          respond "   #{$clean_lich_char}execqn <code>             same as #{$clean_lich_char}exec but without the script active and exited messages and executes it untrusted so it can interact with other untrusted scripts"
          respond "   #{$clean_lich_char}eqn <code>                ''"
          respond
+         if KEEP_SAFE
          respond "   #{$clean_lich_char}trust <script name>       let the script do whatever it wants"
          respond "   #{$clean_lich_char}distrust <script name>    restrict the script from doing things that might harm your computer"
          respond "   #{$clean_lich_char}list trusted              show what scripts are trusted"
          respond "   #{$clean_lich_char}lt                        ''"
          respond
+         end
          respond "   #{$clean_lich_char}send <line>               send a line to all scripts as if it came from the game"
          respond "   #{$clean_lich_char}send to <script> <line>   send a line to a specific script"
          respond
@@ -8058,11 +8084,7 @@ module Games
             if options[:line]
                line = options[:line]
             end
-            if $SAFE < 3
-               proc { $SAFE = PARSE_SAFE; eval(formula) }.call.to_f
-            else
-               eval(formula).to_f
-            end
+            proc { begin; $SAFE = 3; rescue; nil; end; eval(formula) }.call.to_f
          end
          def timeleft=(val)
             @timeleft = val
@@ -8367,11 +8389,7 @@ module Games
                      return false
                   end
                   begin
-                     if $SAFE < 3
-                        proc { $SAFE = PARSE_SAFE; eval(@cast_proc) }.call
-                     else
-                        eval(@cast_proc)
-                     end
+                     proc { begin; $SAFE = 3; rescue; nil; end; eval(@cast_proc) }.call
                   rescue
                      echo "cast: error: #{$!}"
                      respond $!.backtrace[0..2]
@@ -8493,11 +8511,7 @@ module Games
          def method_missing(*args)
             if @@bonus_list.include?(args[0].to_s.gsub('_', '-'))
                if @bonus[args[0].to_s.gsub('_', '-')]
-                  if $SAFE < 3
-                     proc { $SAFE = PARSE_SAFE; eval(@bonus[args[0].to_s.gsub('_', '-')]) }.call.to_i
-                  else
-                     eval(@bonus[args[0].to_s.gsub('_', '-')]).to_i
-                  end
+                  proc { begin; $SAFE = 3; rescue; nil; end; eval(@bonus[args[0].to_s.gsub('_', '-')]) }.call.to_i
                else
                   0
                end
@@ -8531,11 +8545,7 @@ module Games
                else
                   if formula
                      formula.untaint if formula.tainted?
-                     if $SAFE < 3
-                        proc { $SAFE = PARSE_SAFE; eval(formula) }.call.to_i
-                     else
-                        eval(formula).to_i
-                     end
+                     proc { begin; $SAFE = 3; rescue; nil; end; eval(formula) }.call.to_i
                   else
                      0
                   end
@@ -10110,6 +10120,7 @@ Dir.entries(TEMP_DIR).find_all { |fn| fn =~ /^debug-\d+-\d+-\d+-\d+-\d+-\d+\.log
 
 
 
+if KEEP_SAFE
 begin
    did_trusted_defaults = Lich.db.get_first_value("SELECT value FROM lich_settings WHERE name='did_trusted_defaults';")
 rescue SQLite3::BusyException
@@ -10125,6 +10136,7 @@ if did_trusted_defaults.nil?
    rescue SQLite3::BusyException
       sleep 0.1
       retry
+      end
    end
 end
 
