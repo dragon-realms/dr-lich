@@ -12077,7 +12077,7 @@ main_thread = Thread.new {
                end
             elsif defined?(Wine)
                Lich.log "info: launcher_cmd: #{Wine::BIN} #{launcher_cmd}"
-               spawn "#{Wine::BIN} #{launcher_cmd}"
+               spawn({"WINEPREFIX"=>"#{Wine::PREFIX}"}, "#{Wine::BIN} #{launcher_cmd}")
             else
                Lich.log "info: launcher_cmd: #{launcher_cmd}"
                spawn launcher_cmd
