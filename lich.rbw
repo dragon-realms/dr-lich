@@ -10259,6 +10259,7 @@ if ARGV.any? { |arg| (arg == '-h') or (arg == '--help') }
    puts '      --gemstone      Connect to the Gemstone IV Prime server (default).'
    puts '      --dragonrealms  Connect to the DragonRealms server.'
    puts '      --platinum      Connect to the Gemstone IV/DragonRealms Platinum server.'
+   puts '      --test          Connect to the test instance of the selected game server.'
    puts '  -g, --game          Set the IP address and port of the game.  See example below.'
    puts ''
    puts '      --install       Edits the Windows/WINE registry so that Lich is started when logging in using the website or SGE.'
@@ -10272,6 +10273,7 @@ if ARGV.any? { |arg| (arg == '-h') or (arg == '--help') }
    puts 'Examples:'
    puts '  lich -w -d /usr/bin/lich/          (run Lich in Wizard mode using the dir \'/usr/bin/lich/\' as the program\'s home)'
    puts '  lich -g gs3.simutronics.net:4000   (run Lich using the IP address \'gs3.simutronics.net\' and the port number \'4000\')'
+   puts '  lich --dragonrealms --test --genie (run Lich connected to DragonRealms Test server for the Genie frontend)'
    puts '  lich --script-dir /mydir/scripts   (run Lich with its script directory set to \'/mydir/scripts\')'
    puts '  lich --bare -g skotos.net:5555     (run in bare-bones mode with the IP address and port of the game set to \'skotos.net:5555\')'
    puts ''
@@ -10657,11 +10659,11 @@ elsif ARGV.include?('--dragonrealms')
          exit
       elsif ARGV.grep(/--genie/).any?
          game_host = 'dr.simutronics.net'
-         game_port = 11024
+         game_port = ARGV.include?('--test') ? 11624 : 11024
          $frontend = 'genie'
       else
          game_host = 'dr.simutronics.net'
-         game_port = 11024
+         game_port = ARGV.include?('--test') ? 11624 : 11024
          if ARGV.any? { |arg| arg == '--avalon' }
             $frontend = 'avalon'
          elsif ARGV.any? { |arg| arg == '--frostbite' }
