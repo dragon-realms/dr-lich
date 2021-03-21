@@ -9883,6 +9883,8 @@ alias :stamina? :checkstamina
 alias :stunned? :checkstunned
 alias :bleeding? :checkbleeding
 alias :reallybleeding? :checkreallybleeding
+alias :poisoned? :checkpoison
+alias :diseased? :checkdisease
 alias :dead? :checkdead
 alias :hiding? :checkhidden
 alias :hidden? :checkhidden
