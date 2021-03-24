@@ -37,7 +37,7 @@
 #
 
 # Based on Lich 4.6.49
-LICH_VERSION = '4.13.0f'
+LICH_VERSION = '4.13.1f'
 TESTING = false
 KEEP_SAFE = RUBY_VERSION =~ /^2\.[012]\./
 
@@ -7276,6 +7276,7 @@ module Games
             @@thread = Thread.new {
                begin
                   atmospherics = false
+                  combat = false
                   while $_SERVERSTRING_ = @@socket.gets
                      @@last_recv = Time.now
                      @@_buffer.update($_SERVERSTRING_) if TESTING
@@ -7288,6 +7289,17 @@ module Games
                         if atmospherics
                            atmospherics = false
                            $_SERVERSTRING.prepend('<popStream id="atmospherics" \/>') unless $_SERVERSTRING =~ /<popStream id="atmospherics" \/>/
+                        end
+                        # Fix potential malform combat window strings
+                        if $_SERVERSTRING_ =~ /<pushStream id="combat" \/>/
+                           combat = true
+                        end
+                        if $_SERVERSTRING_ =~ /<popStream id="combat" \/>/
+                           combat = false
+                        end
+                        if combat and ($_SERVERSTRING_.start_with?("<pushString") or $_SERVERSTRING_.start_with?("<prompt") or $_SERVERSTRING_.start_with?("<component"))
+                           $_SERVERSTRING_ = "<popStream id=\"combat\" />" + $_SERVERSTRING_
+                           combat=false
                         end
                         if $_SERVERSTRING_ =~ /<pushStream id="familiar" \/><prompt time="[0-9]+">&gt;<\/prompt>/ # Cry For Help spell is broken...
                            $_SERVERSTRING_.sub!('<pushStream id="familiar" />', '')
