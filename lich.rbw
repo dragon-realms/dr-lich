@@ -37,7 +37,7 @@
 #
 
 # Based on Lich 4.6.49
-LICH_VERSION = '4.13.0f'
+LICH_VERSION = '4.13.1f'
 TESTING = false
 KEEP_SAFE = RUBY_VERSION =~ /^2\.[012]\./
 
