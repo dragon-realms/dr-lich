@@ -7282,6 +7282,15 @@ module Games
                      @@_buffer.update($_SERVERSTRING_) if TESTING
                      begin
                         $cmd_prefix = String.new if $_SERVERSTRING_ =~ /^\034GSw/
+
+                        ## Clear out superfluous tags
+                        $_SERVERSTRING_ = $_SERVERSTRING_.gsub("<pushStream id=\"combat\" /><popStream id=\"combat\" />","")
+
+                        ## Fix duplicate pushStrings
+                        while $_SERVERSTRING_.include?("<pushStream id=\"combat\" /><pushStream id=\"combat\" />")
+                          $_SERVERSTRING_ = $_SERVERSTRING_.gsub("<pushStream id=\"combat\" /><pushStream id=\"combat\" />","<pushStream id=\"combat\" />")
+                        end
+
                         # The Rift, Scatter is broken...
                         if $_SERVERSTRING_ =~ /<compDef id='room text'><\/compDef>/
                            $_SERVERSTRING_.sub!(/(.*)\s\s<compDef id='room text'><\/compDef>/)  { "<compDef id='room desc'>#{$1}</compDef>" }
@@ -7295,10 +7304,14 @@ module Games
                            combat = true
                         end
                         if $_SERVERSTRING_ =~ /<popStream id="combat" \/>/
-                           combat = false
+                           combat = false unless $_SERVERSTRING_.rindex("<pushStream id=\"combat\" />") > $_SERVERSTRING_.rindex("<popStream id=\"combat\" />")
                         end
-                        if combat and ($_SERVERSTRING_.start_with?("<pushString") or $_SERVERSTRING_.start_with?("<prompt") or $_SERVERSTRING_.start_with?("<component"))
+                        if combat and ($_SERVERSTRING_.start_with?("<prompt") or $_SERVERSTRING_.start_with?("<component"))
                            $_SERVERSTRING_ = "<popStream id=\"combat\" />" + $_SERVERSTRING_
+                           combat=false
+                        end
+                        if combat and $_SERVERSTRING_.include?("<pushStream id=\"percWindow")
+                           $_SERVERSTRING_ = $_SERVERSTRING_.gsub("<pushStream id=\"percWindow","<popStream id=\"combat\" /><pushStream id=\"percWindow")
                            combat=false
                         end
                         if $_SERVERSTRING_ =~ /<pushStream id="familiar" \/><prompt time="[0-9]+">&gt;<\/prompt>/ # Cry For Help spell is broken...
