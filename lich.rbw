@@ -7276,7 +7276,8 @@ module Games
             @@thread = Thread.new {
                begin
                   atmospherics = false
-                  combat = false
+                  combat_count = 0
+                  end_combat_tags = [ "<prompt", "<clearStream", "<component", "<pushStream id=\"combat\" />", "<pushStream id=\"percWindow" ]
                   while $_SERVERSTRING_ = @@socket.gets
                      @@last_recv = Time.now
                      @@_buffer.update($_SERVERSTRING_) if TESTING
@@ -7286,9 +7287,24 @@ module Games
                         ## Clear out superfluous tags
                         $_SERVERSTRING_ = $_SERVERSTRING_.gsub("<pushStream id=\"combat\" /><popStream id=\"combat\" />","")
 
+                        ## Fix combat wrapping components - Why, DR, Why?
+                        $_SERVERSTRING_ = $_SERVERSTRING_.gsub("<pushStream id=\"combat\" /><component id=","<component id=")
+
                         ## Fix duplicate pushStrings
                         while $_SERVERSTRING_.include?("<pushStream id=\"combat\" /><pushStream id=\"combat\" />")
                           $_SERVERSTRING_ = $_SERVERSTRING_.gsub("<pushStream id=\"combat\" /><pushStream id=\"combat\" />","<pushStream id=\"combat\" />")
+                        end
+
+                        combat_count += $_SERVERSTRING_.scan("<pushStream id=\"combat\" />").length
+                        combat_count -= $_SERVERSTRING_.scan("<popStream id=\"combat\" />").length
+
+                        if combat_count >0
+                          end_combat_tags.each do | tag |
+                            if $_SERVERSTRING_.include?(tag)
+                              $_SERVERSTRING_ = "<popStream id=\"combat\" />" + $_SERVERSTRING_
+                              combat_count -= 1
+                            end
+                          end
                         end
 
                         # The Rift, Scatter is broken...
@@ -7299,21 +7315,7 @@ module Games
                            atmospherics = false
                            $_SERVERSTRING.prepend('<popStream id="atmospherics" \/>') unless $_SERVERSTRING =~ /<popStream id="atmospherics" \/>/
                         end
-                        # Fix potential malform combat window strings
-                        if $_SERVERSTRING_ =~ /<pushStream id="combat" \/>/
-                           combat = true
-                        end
-                        if $_SERVERSTRING_ =~ /<popStream id="combat" \/>/
-                           combat = false unless $_SERVERSTRING_.rindex("<pushStream id=\"combat\" />") > $_SERVERSTRING_.rindex("<popStream id=\"combat\" />")
-                        end
-                        if combat and ($_SERVERSTRING_.start_with?("<prompt") or $_SERVERSTRING_.start_with?("<component"))
-                           $_SERVERSTRING_ = "<popStream id=\"combat\" />" + $_SERVERSTRING_
-                           combat=false
-                        end
-                        if combat and $_SERVERSTRING_.include?("<pushStream id=\"percWindow")
-                           $_SERVERSTRING_ = $_SERVERSTRING_.gsub("<pushStream id=\"percWindow","<popStream id=\"combat\" /><pushStream id=\"percWindow")
-                           combat=false
-                        end
+
                         if $_SERVERSTRING_ =~ /<pushStream id="familiar" \/><prompt time="[0-9]+">&gt;<\/prompt>/ # Cry For Help spell is broken...
                            $_SERVERSTRING_.sub!('<pushStream id="familiar" />', '')
                         elsif $_SERVERSTRING_ =~ /<pushStream id="atmospherics" \/><prompt time="[0-9]+">&gt;<\/prompt>/ # pet pigs in DragonRealms are broken...
