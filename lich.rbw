@@ -37,7 +37,7 @@
 #
 
 # Based on Lich 4.6.49
-LICH_VERSION = '4.13.3f'
+LICH_VERSION = '4.13.4f'
 TESTING = false
 KEEP_SAFE = RUBY_VERSION =~ /^2\.[012]\./
 
@@ -7277,7 +7277,7 @@ module Games
                begin
                   atmospherics = false
                   combat_count = 0
-                  end_combat_tags = [ "<prompt", "<clearStream", "<component", "<pushStream id=\"combat\" />", "<pushStream id=\"percWindow" ]
+                  end_combat_tags = [ "<prompt", "<clearStream", "<component", "<pushStream id=\"percWindow" ]
                   while $_SERVERSTRING_ = @@socket.gets
                      @@last_recv = Time.now
                      @@_buffer.update($_SERVERSTRING_) if TESTING
@@ -7286,26 +7286,33 @@ module Games
 
                         ## Clear out superfluous tags
                         $_SERVERSTRING_ = $_SERVERSTRING_.gsub("<pushStream id=\"combat\" /><popStream id=\"combat\" />","")
+                        $_SERVERSTRING_ = $_SERVERSTRING_.gsub("<popStream id=\"combat\" /><pushStream id=\"combat\" />","")
 
                         ## Fix combat wrapping components - Why, DR, Why?
                         $_SERVERSTRING_ = $_SERVERSTRING_.gsub("<pushStream id=\"combat\" /><component id=","<component id=")
+                        # $_SERVERSTRING_ = $_SERVERSTRING_.gsub("<pushStream id=\"combat\" /><prompt ","<prompt ")
 
                         ## Fix duplicate pushStrings
                         while $_SERVERSTRING_.include?("<pushStream id=\"combat\" /><pushStream id=\"combat\" />")
                           $_SERVERSTRING_ = $_SERVERSTRING_.gsub("<pushStream id=\"combat\" /><pushStream id=\"combat\" />","<pushStream id=\"combat\" />")
                         end
-
-                        combat_count += $_SERVERSTRING_.scan("<pushStream id=\"combat\" />").length
-                        combat_count -= $_SERVERSTRING_.scan("<popStream id=\"combat\" />").length
-
+                        
                         if combat_count >0
                           end_combat_tags.each do | tag |
+                            # $_SERVERSTRING_ = "<!-- looking for tag: #{tag}" + $_SERVERSTRING_
                             if $_SERVERSTRING_.include?(tag)
-                              $_SERVERSTRING_ = "<popStream id=\"combat\" />" + $_SERVERSTRING_
+                              $_SERVERSTRING_ = $_SERVERSTRING_.gsub(tag,"<popStream id=\"combat\" />" + tag) unless $_SERVERSTRING_.include?("<popStream id=\"combat\" />")
                               combat_count -= 1
+                            end
+                            if $_SERVERSTRING_.include?("<pushStream id=\"combat\" />")
+                               $_SERVERSTRING_ = $_SERVERSTRING_.gsub("<pushStream id=\"combat\" />","")
                             end
                           end
                         end
+
+                        combat_count += $_SERVERSTRING_.scan("<pushStream id=\"combat\" />").length
+                        combat_count -= $_SERVERSTRING_.scan("<popStream id=\"combat\" />").length
+                        combat_count = 0 if combat_count < 0
 
                         # The Rift, Scatter is broken...
                         if $_SERVERSTRING_ =~ /<compDef id='room text'><\/compDef>/
