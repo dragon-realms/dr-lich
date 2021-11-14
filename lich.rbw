@@ -1295,7 +1295,7 @@ class LimitedArray < Array
 end
 
 class XMLParser
-   attr_reader :mana, :max_mana, :health, :max_health, :spirit, :max_spirit, :last_spirit, :stamina, :max_stamina, :stance_text, :stance_value, :mind_text, :mind_value, :prepared_spell, :encumbrance_text, :encumbrance_full_text, :encumbrance_value, :indicator, :injuries, :injury_mode, :room_count, :room_title, :room_description, :room_exits, :room_exits_string, :room_objects, :familiar_room_title, :familiar_room_description, :familiar_room_exits, :bounty_task, :injury_mode, :server_time, :server_time_offset, :roundtime_end, :cast_roundtime_end, :last_pulse, :level, :next_level_value, :next_level_text, :society_task, :stow_container_id, :name, :game, :in_stream, :player_id, :active_spells, :prompt, :current_target_id, :room_window_disabled
+   attr_reader :mana, :max_mana, :health, :max_health, :spirit, :max_spirit, :last_spirit, :stamina, :max_stamina, :concentration, :max_concentration, :stance_text, :stance_value, :mind_text, :mind_value, :prepared_spell, :encumbrance_text, :encumbrance_full_text, :encumbrance_value, :indicator, :injuries, :injury_mode, :room_count, :room_title, :room_description, :room_exits, :room_exits_string, :room_objects, :familiar_room_title, :familiar_room_description, :familiar_room_exits, :bounty_task, :injury_mode, :server_time, :server_time_offset, :roundtime_end, :cast_roundtime_end, :last_pulse, :level, :next_level_value, :next_level_text, :society_task, :stow_container_id, :name, :game, :in_stream, :player_id, :active_spells, :prompt, :current_target_id, :room_window_disabled
    attr_accessor :send_fake_tags
 
    @@warned_deprecated_spellfront = 0
@@ -1366,6 +1366,8 @@ class XMLParser
       @last_spirit = nil
       @stamina = 0
       @max_stamina = 0
+      @concentration = 0
+      @max_concentration = 0
       @stance_text = String.new
       @stance_value = 0
       @mind_text = String.new
@@ -1542,6 +1544,8 @@ class XMLParser
             elsif attributes['id'] == 'encumlevel'
                @encumbrance_value = attributes['value'].to_i
                @encumbrance_text = attributes['text']
+            elsif attributes['id'] == 'concentration'
+               @concentration, @max_concentration = attributes['text'].scan(/-?\d+/).collect { |num| num.to_i }
             end
          elsif name == 'roundTime'
             @roundtime_end = attributes['value'].to_i
@@ -5293,6 +5297,23 @@ def percentstamina(num=nil)
       percent = 100
    else
       percent = ((XMLData.stamina.to_f / XMLData.max_stamina.to_f) * 100).to_i
+   end
+   if num.nil?
+      percent
+   else
+      percent >= num.to_i
+   end
+end
+
+def maxconcentration()
+   XMLData.max_concentration
+end
+
+def percentconcentration(num=nil)
+   if XMLData.max_concentration == 0
+      percent == 100
+   else
+      percent = ((XMLData.concentration.to_f / XMLData.max_concentration.to_f) * 100).to_i
    end
    if num.nil?
       percent
