@@ -37,7 +37,7 @@
 #
 
 # Based on Lich 4.6.56
-LICH_VERSION = '4.13.5f'
+LICH_VERSION = '4.13.6f'
 TESTING = false
 KEEP_SAFE = RUBY_VERSION =~ /^2\.[012]\./
 
@@ -287,10 +287,10 @@ if (RUBY_PLATFORM =~ /mingw|win/i) and (RUBY_PLATFORM !~ /darwin/i)
          elsif (args[:dwType] == REG_MULTI_SZ) and (args[:lpData].class == Array)
             lpData = args[:lpData].join("\x00").concat("\x00\x00")
             cbData = lpData.length
-         elsif (args[:dwType] == REG_DWORD) and (args[:lpData].class == Fixnum)
+         elsif (args[:dwType] == REG_DWORD) and (args[:lpData].class == Integer)
             lpData = [args[:lpData]].pack('L')
             cbData = 4
-         elsif (args[:dwType] == REG_QWORD) and (args[:lpData].class == Fixnum or args[:lpData].class == Bignum)
+         elsif (args[:dwType] == REG_QWORD) and (args[:lpData].class == Integer)
             lpData = [args[:lpData]].pack('Q')
             cbData = 8
          elsif args[:dwType] == REG_BINARY
@@ -3591,7 +3591,7 @@ class Map
    end
    def Map.[](val)
       Map.load unless @@loaded
-      if (val.class == Fixnum) or (val.class == Bignum) or val =~ /^[0-9]+$/
+      if (val.class == Integer) or val =~ /^[0-9]+$/
          @@list[val.to_i]
       else
          chkre = /#{val.strip.sub(/\.$/, '').gsub(/\.(?:\.\.)?/, '|')}/i
@@ -4316,7 +4316,7 @@ class Map
                   end
                }
             end
-         elsif destination.class == Fixnum
+         elsif destination.class == Integer
             until pq.size == 0
                v = pq.shift
                break if v == destination
@@ -5342,7 +5342,7 @@ def checkstance(num=nil)
          echo "checkstance: invalid argument (#{num}).  Must be off/adv/for/neu/gua/def or 0-100"
          nil
       end
-   elsif (num.class == Fixnum) or (num =~ /^[0-9]+$/ and num = num.to_i)
+   elsif (num.class == Integer) or (num =~ /^[0-9]+$/ and num = num.to_i)
       XMLData.stance_value == num.to_i
    else
       echo "checkstance: invalid argument (#{num}).  Must be off/adv/for/neu/gua/def or 0-100"
@@ -5361,7 +5361,7 @@ end
 def checkencumbrance(string=nil)
    if string.nil?
       XMLData.encumbrance_text
-   elsif (string.class == Fixnum) or (string =~ /^[0-9]+$/ and string = string.to_i)
+   elsif (string.class == Integer) or (string =~ /^[0-9]+$/ and string = string.to_i)
       string <= XMLData.encumbrance_value
    else
       # fixme
@@ -5628,7 +5628,7 @@ end
 def cast(spell, target=nil, results_of_interest=nil)
    if spell.class == Spell
       spell.cast(target, results_of_interest)
-   elsif ( (spell.class == Fixnum) or (spell.to_s =~ /^[0-9]+$/) ) and (find_spell = Spell[spell.to_i])
+   elsif ( (spell.class == Integer) or (spell.to_s =~ /^[0-9]+$/) ) and (find_spell = Spell[spell.to_i])
       find_spell.cast(target, results_of_interest)
    elsif (spell.class == String) and (find_spell = Spell[spell])
       find_spell.cast(target, results_of_interest)
@@ -5668,7 +5668,7 @@ end
 
 def matchtimeout(secs, *strings)
    unless script = Script.current then echo("An unknown script thread tried to fetch a game line from the queue, but Lich can't process the call without knowing which script is calling! Aborting...") ; Thread.current.kill ; return false end
-   unless (secs.class == Float || secs.class == Fixnum)
+   unless (secs.class == Float || secs.class == Integer)
       echo('matchtimeout error! You appear to have given it a string, not a #! Syntax:  matchtimeout(30, "You stand up")')
       return false
    end
@@ -7079,7 +7079,7 @@ module Buffer
       @@streams[Thread.current.object_id]
    end
    def Buffer.streams=(val)
-      if (val.class != Fixnum) or ((val & 63) == 0)
+      if (val.class != Integer) or ((val & 63) == 0)
          respond "--- Lich: error: invalid streams value\n\t#{$!.caller[0..2].join("\n\t")}"
          return nil
       end
@@ -8153,7 +8153,7 @@ module Games
             Spell.load unless @@loaded
             if val.class == Spell
                val
-            elsif (val.class == Fixnum) or (val.class == String and val =~ /^[0-9]+$/)
+            elsif (val.class == Integer) or (val.class == String and val =~ /^[0-9]+$/)
                @@list.find { |spell| spell.num == val.to_i }
             else
                (@@list.find { |s| s.name =~ /^#{val}$/i } || @@list.find { |s| s.name =~ /^#{val}/i } || @@list.find { |s| s.msgup =~ /#{val}/i or s.msgdn =~ /#{val}/i })
@@ -8561,7 +8561,7 @@ module Games
                      cast_cmd += ' target'
                   elsif target.class == GameObj
                      cast_cmd += " ##{target.id}"
-                  elsif target.class == Fixnum
+                  elsif target.class == Integer
                      cast_cmd += " ##{target}"
                   else
                      cast_cmd += " #{target}"
