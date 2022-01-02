@@ -1,7 +1,9 @@
 # Instructions for combining Lich with Genie & Frostbite FE
 
 ## General Instructions
-basic steps are as follows, you need a working lich install https://lichproject.org/download.html#win_storm_wiz_lich 
+Basic steps are as follows:
+
+You need a working lich install https://lichproject.org/download.html#win_storm_wiz_lich (WARNING: do NOT download and use the `lich-4.6.52.zip` file at this link. DR Lich uses a different file.)
 
 Set up dependency in SF https://github.com/rpherbig/dr-scripts/wiki/First-Time-Setup steps 1-3
 
