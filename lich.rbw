@@ -37,7 +37,7 @@
 #
 
 # Based on Lich 4.6.56
-LICH_VERSION = '4.13.6f'
+LICH_VERSION = '4.13.7f'
 TESTING = false
 KEEP_SAFE = RUBY_VERSION =~ /^2\.[012]\./
 
@@ -2471,8 +2471,8 @@ class Script
       end
       # fixme: look in wizard script directory
       # fixme: allow subdirectories?
-      file_list = Dir.entries(SCRIPT_DIR).delete_if { |fn| (fn == '.') or (fn == '..') }.sort
-      if file_name = (file_list.find { |val| val =~ /^#{Regexp.escape(script_name)}\.(?:lic|rb|cmd|wiz)(?:\.gz|\.Z)?$/ || val =~ /^#{Regexp.escape(script_name)}\.(?:lic|rb|cmd|wiz)(?:\.gz|\.Z)?$/i } || file_list.find { |val| val =~ /^#{Regexp.escape(script_name)}[^.]+\.(?i:lic|rb|cmd|wiz)(?:\.gz|\.Z)?$/ } || file_list.find { |val| val =~ /^#{Regexp.escape(script_name)}[^.]+\.(?:lic|rb|cmd|wiz)(?:\.gz|\.Z)?$/i })
+      file_list = Dir.children(File.join(SCRIPT_DIR, "custom")).map{ |s| s.prepend("/custom/") } + Dir.children(SCRIPT_DIR)
+      if file_name = (file_list.find { |val| val =~ /^(?:\/custom\/)?#{Regexp.escape(script_name)}\.(?:lic|rb|cmd|wiz)(?:\.gz|\.Z)?$/ || val =~ /^(?:\/custom\/)?#{Regexp.escape(script_name)}\.(?:lic|rb|cmd|wiz)(?:\.gz|\.Z)?$/i } || file_list.find { |val| val =~ /^(?:\/custom\/)?#{Regexp.escape(script_name)}[^.]+\.(?i:lic|rb|cmd|wiz)(?:\.gz|\.Z)?$/ } || file_list.find { |val| val =~ /^(?:\/custom\/)?#{Regexp.escape(script_name)}[^.]+\.(?:lic|rb|cmd|wiz)(?:\.gz|\.Z)?$/i })
          script_name = file_name.sub(/\..{1,3}$/, '')
       end
       file_list = nil
@@ -10216,6 +10216,15 @@ end
 unless File.exists?(SCRIPT_DIR)
    begin
       Dir.mkdir(SCRIPT_DIR)
+   rescue
+      Lich.log "error: #{$!}\n\t#{$!.backtrace.join("\n\t")}"
+      Lich.msgbox(:message => "An error occured while attempting to create directory #{SCRIPT_DIR}\n\n#{$!}", :icon => :error)
+      exit
+   end
+end
+unless File.exists?(File.join(SCRIPT_DIR, "custom"))
+   begin
+      Dir.mkdir(File.join(SCRIPT_DIR, "custom"))
    rescue
       Lich.log "error: #{$!}\n\t#{$!.backtrace.join("\n\t")}"
       Lich.msgbox(:message => "An error occured while attempting to create directory #{SCRIPT_DIR}\n\n#{$!}", :icon => :error)
