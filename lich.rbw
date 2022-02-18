@@ -2639,7 +2639,9 @@ class Script
          File.exists?("#{SCRIPT_DIR}/#{script_name}.cmd.gz") || File.exists?("#{SCRIPT_DIR}/custom/#{script_name}.cmd.gz") ||
          File.exists?("#{SCRIPT_DIR}/#{script_name}.wiz.gz") || File.exists?("#{SCRIPT_DIR}/custom/#{script_name}.wiz.gz")
       end
-   }   @@elevated_log = proc { |data|
+      }
+
+      @@elevated_log = proc { |data|
       if script = Script.current
          if script.name =~ /\\|\//
             nil
