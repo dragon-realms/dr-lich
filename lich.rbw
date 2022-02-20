@@ -2477,10 +2477,10 @@ class Script
       end
       file_list = nil
       if file_name.nil?
-         respond "--- Lich: could not find script '#{script_name}' in directory #{SCRIPT_DIR}"
+         respond "--- Lich: could not find script '#{script_name}' in directory #{SCRIPT_DIR} or #{SCRIPT_DIR}/custom"
          next nil
       end
-      if (options[:force] != true) and (Script.running + Script.hidden).find { |s| s.name =~ /^#{Regexp.escape(script_name)}$/i }
+      if (options[:force] != true) and (Script.running + Script.hidden).find { |s| s.name =~ /^#{Regexp.escape(script_name.sub('/custom/', ''))}$/i }
          respond "--- Lich: #{script_name} is already running (use #{$clean_lich_char}force [scriptname] if desired)."
          next nil
       end
