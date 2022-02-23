@@ -5029,6 +5029,9 @@ def move(dir='none', giveup_seconds=30, giveup_lines=30)
             sleep 0.1
          }
          put_dir.call
+      elsif line =~ /^It's pitch dark and you can't see a thing!/
+        echo "You will need a light source to continue your journey"
+        return true
       end
       if XMLData.room_count > room_count
          fill_hands if need_full_hands
@@ -7326,7 +7329,7 @@ module Games
                         while $_SERVERSTRING_.include?("<pushStream id=\"combat\" /><pushStream id=\"combat\" />")
                           $_SERVERSTRING_ = $_SERVERSTRING_.gsub("<pushStream id=\"combat\" /><pushStream id=\"combat\" />","<pushStream id=\"combat\" />")
                         end
-                        
+
                         if combat_count >0
                           end_combat_tags.each do | tag |
                             # $_SERVERSTRING_ = "<!-- looking for tag: #{tag}" + $_SERVERSTRING_
