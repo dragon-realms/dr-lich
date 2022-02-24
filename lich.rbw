@@ -4889,7 +4889,7 @@ def move(dir='none', giveup_seconds=30, giveup_lines=30)
       end
       if line.nil?
          sleep 0.1
-        elsif line =~ /^You realize that would be next to impossible while in combat.|^You can't do that while engaged!|^You are engaged to |^You need to retreat out of combat first!|^You try to move, but you're engaged|^While in combat\?  You'll have better luck if you first retreat/
+      elsif line =~ /^You realize that would be next to impossible while in combat.|^You can't do that while engaged!|^You are engaged to |^You need to retreat out of combat first!|^You try to move, but you're engaged|^While in combat\?  You'll have better luck if you first retreat/
          # DragonRealms
          fput 'retreat'
          fput 'retreat'
