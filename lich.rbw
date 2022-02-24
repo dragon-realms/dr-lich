@@ -37,7 +37,7 @@
 #
 
 # Based on Lich 4.6.56
-LICH_VERSION = '4.13.8f'
+LICH_VERSION = '4.13.11f'
 TESTING = false
 KEEP_SAFE = RUBY_VERSION =~ /^2\.[012]\./
 
@@ -2471,7 +2471,7 @@ class Script
       end
       # fixme: look in wizard script directory
       # fixme: allow subdirectories?
-      file_list = Dir.children(File.join(SCRIPT_DIR, "custom")).map{ |s| s.prepend("/custom/") } + Dir.children(SCRIPT_DIR)
+      file_list = Dir.children(File.join(SCRIPT_DIR, "custom")).sort.map{ |s| s.prepend("/custom/") } + Dir.children(SCRIPT_DIR).sort
       if file_name = (file_list.find { |val| val =~ /^(?:\/custom\/)?#{Regexp.escape(script_name)}\.(?:lic|rb|cmd|wiz)(?:\.gz|\.Z)?$/ || val =~ /^(?:\/custom\/)?#{Regexp.escape(script_name)}\.(?:lic|rb|cmd|wiz)(?:\.gz|\.Z)?$/i } || file_list.find { |val| val =~ /^(?:\/custom\/)?#{Regexp.escape(script_name)}[^.]+\.(?i:lic|rb|cmd|wiz)(?:\.gz|\.Z)?$/ } || file_list.find { |val| val =~ /^(?:\/custom\/)?#{Regexp.escape(script_name)}[^.]+\.(?:lic|rb|cmd|wiz)(?:\.gz|\.Z)?$/i })
          script_name = file_name.sub(/\..{1,3}$/, '')
       end
@@ -7326,7 +7326,7 @@ module Games
                         while $_SERVERSTRING_.include?("<pushStream id=\"combat\" /><pushStream id=\"combat\" />")
                           $_SERVERSTRING_ = $_SERVERSTRING_.gsub("<pushStream id=\"combat\" /><pushStream id=\"combat\" />","<pushStream id=\"combat\" />")
                         end
-                        
+
                         if combat_count >0
                           end_combat_tags.each do | tag |
                             # $_SERVERSTRING_ = "<!-- looking for tag: #{tag}" + $_SERVERSTRING_
