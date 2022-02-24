@@ -37,7 +37,7 @@
 #
 
 # Based on Lich 4.6.56
-LICH_VERSION = '4.13.8f'
+LICH_VERSION = '4.13.9f'
 TESTING = false
 KEEP_SAFE = RUBY_VERSION =~ /^2\.[012]\./
 
@@ -5020,7 +5020,7 @@ def move(dir='none', giveup_seconds=30, giveup_lines=30)
          put_dir.call
       elsif line =~ /^You flick your hand (?:up|down)wards and focus your aura on your disk, but your disk only wobbles briefly\.$/
          put_dir.call
-      elsif line =~ /^You dive into the fast-moving river, but the current catches you and whips you back to shore, wet and battered\.$|^Running through the swampy terrain, you notice a wet patch in the bog/
+      elsif line =~ /^You dive into the fast-moving river, but the current catches you and whips you back to shore, wet and battered\.$|^Running through the swampy terrain, you notice a wet patch in the bog|^You flounder around in the water.$|^You blunder around in the water, barely able|^You struggle against the swift current to swim|^You slap at the water in a sad failure to swim|^You work against the swift current to swim/
          waitrt?
          put_dir.call
       elsif line == "You don't seem to be able to move to do that."
@@ -7326,7 +7326,7 @@ module Games
                         while $_SERVERSTRING_.include?("<pushStream id=\"combat\" /><pushStream id=\"combat\" />")
                           $_SERVERSTRING_ = $_SERVERSTRING_.gsub("<pushStream id=\"combat\" /><pushStream id=\"combat\" />","<pushStream id=\"combat\" />")
                         end
-                        
+
                         if combat_count >0
                           end_combat_tags.each do | tag |
                             # $_SERVERSTRING_ = "<!-- looking for tag: #{tag}" + $_SERVERSTRING_
