@@ -10760,7 +10760,6 @@ end
 
 module EAccess
   PEM = File.join("#{DATA_DIR}/", "simu.pem")
-#  pp PEM
   PACKET_SIZE = 8192
 
   def self.pem_exist?
