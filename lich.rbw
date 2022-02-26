@@ -1472,13 +1472,6 @@ class XMLParser
             if (attributes['id'] == 'main') and attributes['subtitle']
                @room_title = '[' + attributes['subtitle'][3..-1] + ']'
             end
-            if (attributes['id'] == 'room' and !@nav_seen)
-              # Occasionally, the `<nav/>` tag is not sent for some rooms
-              # which usually denotes you've moved in to a new room. In that case,
-              # an alternative is existance of `<streamWindow id='room' ...>` tag
-              respond('*** NO NAV TAG WORKAROUND')
-              @nav_seen = true
-            end
          elsif name == 'style'
             @current_style = attributes['id']
          elsif name == 'prompt'
