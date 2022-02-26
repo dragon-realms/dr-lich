@@ -10760,6 +10760,7 @@ end
 
 module EAccess
   PEM = File.join("#{DATA_DIR}/", "simu.pem")
+  #pp PEM
   PACKET_SIZE = 8192
 
   def self.pem_exist?
@@ -10786,8 +10787,7 @@ module EAccess
       download_pem
     else
       return true
-  end
-#     fail Exception, "\nssl peer certificate did not match #{EAccess::PEM}\nwas:\n#{conn.peer_cert}"
+    end
   end
 
   def self.socket(hostname = "eaccess.play.net", port = 7910)
@@ -10860,7 +10860,7 @@ module EAccess
     else
       login_info = Array.new
       for game in response.sub(/^M\t/, '').scan(/[^\t]+\t[^\t^\n]+/)
-          game_code, game_name = game.split("\t")
+        game_code, game_name = game.split("\t")
         #pp "M:response = %s" % response
         conn.puts "N\t#{game_code}\n"
         response = EAccess.read(conn)
