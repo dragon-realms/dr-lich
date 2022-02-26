@@ -67,7 +67,6 @@ require 'drb'
 require 'resolv'
 require 'digest/md5'
 require 'json'
-require 'openssl'
 
 begin
    # stupid workaround for Windows
@@ -1446,9 +1445,9 @@ class XMLParser
             @active_spells.clear
          elsif name == 'resource'
             nil
-      elsif name == 'nav'
-        $nav_seen = true
-        Map.last_seen_objects = nil
+         elsif name == 'nav'
+            $nav_seen = true
+            Map.last_seen_objects = nil
          elsif name == 'pushStream'
             @in_stream = true
             @current_stream = attributes['id'].to_s
@@ -1472,6 +1471,13 @@ class XMLParser
          elsif (name == 'streamWindow')
             if (attributes['id'] == 'main') and attributes['subtitle']
                @room_title = '[' + attributes['subtitle'][3..-1] + ']'
+            end
+            if (attributes['id'] == 'room' and !@nav_seen)
+              # Occasionally, the `<nav/>` tag is not sent for some rooms
+              # which usually denotes you've moved in to a new room. In that case,
+              # an alternative is existance of `<streamWindow id='room' ...>` tag
+              respond('*** NO NAV TAG WORKAROUND')
+              @nav_seen = true
             end
          elsif name == 'style'
             @current_style = attributes['id']
@@ -2472,7 +2478,7 @@ class Script
       end
       # fixme: look in wizard script directory
       # fixme: allow subdirectories?
-      file_list = Dir.children(File.join(SCRIPT_DIR, "custom")).map{ |s| s.prepend("/custom/") } + Dir.children(SCRIPT_DIR)
+      file_list = Dir.children(File.join(SCRIPT_DIR, "custom")).sort.map{ |s| s.prepend("/custom/") } + Dir.children(SCRIPT_DIR).sort
       if file_name = (file_list.find { |val| val =~ /^(?:\/custom\/)?#{Regexp.escape(script_name)}\.(?:lic|rb|cmd|wiz)(?:\.gz|\.Z)?$/ || val =~ /^(?:\/custom\/)?#{Regexp.escape(script_name)}\.(?:lic|rb|cmd|wiz)(?:\.gz|\.Z)?$/i } || file_list.find { |val| val =~ /^(?:\/custom\/)?#{Regexp.escape(script_name)}[^.]+\.(?i:lic|rb|cmd|wiz)(?:\.gz|\.Z)?$/ } || file_list.find { |val| val =~ /^(?:\/custom\/)?#{Regexp.escape(script_name)}[^.]+\.(?:lic|rb|cmd|wiz)(?:\.gz|\.Z)?$/i })
          script_name = file_name.sub(/\..{1,3}$/, '')
       end
@@ -5030,6 +5036,9 @@ def move(dir='none', giveup_seconds=30, giveup_lines=30)
             sleep 0.1
          }
          put_dir.call
+      elsif line =~ /^It's pitch dark and you can't see a thing!/
+        echo "You will need a light source to continue your journey"
+        return true
       end
       if XMLData.room_count > room_count
          fill_hands if need_full_hands
@@ -10760,7 +10769,7 @@ end
 
 module EAccess
   PEM = File.join("#{DATA_DIR}/", "simu.pem")
-  #pp PEM
+#  pp PEM
   PACKET_SIZE = 8192
 
   def self.pem_exist?
@@ -10787,7 +10796,8 @@ module EAccess
       download_pem
     else
       return true
-    end
+  end
+#     fail Exception, "\nssl peer certificate did not match #{EAccess::PEM}\nwas:\n#{conn.peer_cert}"
   end
 
   def self.socket(hostname = "eaccess.play.net", port = 7910)
@@ -10930,14 +10940,14 @@ main_thread = Thread.new {
          data = entry_data.find { |d| (d[:char_name] == char_name) }
       end
 
-    unless data
-      data = { char_name: char_name }
-      data[:game_code] = "DR"
-      user_id = ARGV[ARGV.index('--user_id')+1]
-      data[:user_id] = user_id
-      password = ARGV[ARGV.index('--password')+1]
-      data[:password] = password
-    end
+      unless data
+         data = { char_name: char_name }
+         data[:game_code] = "DR"
+         user_id = ARGV[ARGV.index('--user_id')+1]
+         data[:user_id] = user_id
+         password = ARGV[ARGV.index('--password')+1]
+         data[:password] = password
+      end
 
       if data
          Lich.log "info: using quick game entry settings for #{char_name}"
@@ -10957,35 +10967,29 @@ main_thread = Thread.new {
             end
          }
 
+         launch_data_hash = EAccess.auth(
+            account: data[:user_id],
+            password: data[:password],
+            character: data[:char_name],
+            game_code: data[:game_code]
+         )
 
-### New code block start
-    launch_data_hash = EAccess.auth(
-      account: data[:user_id],
-      password: data[:password],
-      character: data[:char_name],
-      game_code: data[:game_code]
-    )
-
-    launch_data = launch_data_hash.map { |k, v| "#{k.upcase}=#{v}" }
-    if data[:frontend] == 'wizard'
-      launch_data.collect! { |line| line.sub(/GAMEFILE=.+/, 'GAMEFILE=WIZARD.EXE').sub(/GAME=.+/, 'GAME=WIZ').sub(/FULLGAMENAME=.+/, 'FULLGAMENAME=Wizard Front End') }
-    elsif data[:frontend] == 'avalon'
-      launch_data.collect! { |line| line.sub(/GAME=.+/, 'GAME=AVALON') }
-    end
-    if data[:custom_launch]
-      launch_data.push "CUSTOMLAUNCH=#{login_info[:custom_launch]}"
-      if login_info[:custom_launch_dir]
-        launch_data.push "CUSTOMLAUNCHDIR=#{login_info[:custom_launch_dir]}"
+         launch_data = launch_data_hash.map { |k, v| "#{k.upcase}=#{v}" }
+         if data[:frontend] == 'wizard'
+            launch_data.collect! { |line| line.sub(/GAMEFILE=.+/, 'GAMEFILE=WIZARD.EXE').sub(/GAME=.+/, 'GAME=WIZ').sub(/FULLGAMENAME=.+/, 'FULLGAMENAME=Wizard Front End') }
+         elsif data[:frontend] == 'avalon'
+            launch_data.collect! { |line| line.sub(/GAME=.+/, 'GAME=AVALON') }
+         end
+         if data[:custom_launch]
+            launch_data.push "CUSTOMLAUNCH=#{login_info[:custom_launch]}"
+            if login_info[:custom_launch_dir]
+               launch_data.push "CUSTOMLAUNCHDIR=#{login_info[:custom_launch_dir]}"
+            end
+         end
+      else
+         $stdout.puts "error: failed to find login data for #{char_name}"
+         Lich.log "error: failed to find login data for #{char_name}"
       end
-    end
-    else
-      $stdout.puts "error: failed to find login data for #{char_name}"
-      Lich.log "error: failed to find login data for #{char_name}"
-    end
-
-### New code block end
-
-
    elsif defined?(Gtk) and ARGV.empty?
       if File.exists?("#{DATA_DIR}/entry.dat")
          entry_data = File.open("#{DATA_DIR}/entry.dat", 'r') { |file|
