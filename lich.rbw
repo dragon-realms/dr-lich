@@ -5029,6 +5029,9 @@ def move(dir='none', giveup_seconds=30, giveup_lines=30)
             sleep 0.1
          }
          put_dir.call
+      elsif line =~ /^It's pitch dark and you can't see a thing!/
+        echo "You will need a light source to continue your journey"
+        return true
       end
       if XMLData.room_count > room_count
          fill_hands if need_full_hands
