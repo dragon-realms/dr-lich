@@ -73,10 +73,6 @@ begin
    # seems to avoid a 10 second lag when starting lnet, without adding a 10 second lag at startup
    require 'openssl'
    OpenSSL::PKey::RSA.new(512)
-rescue LoadError
-   nil # not required for basic Lich; however, lnet and repository scripts will fail without openssl
-rescue
-   nil
 end
 if (RUBY_PLATFORM =~ /mingw|win/i) and (RUBY_PLATFORM !~ /darwin/i)
    #
